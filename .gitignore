@@ -22,3 +22,7 @@ __pycache__/
 # IDEs
 .vscode/
 .idea/
+
+# Exploratory scripts
+tests/explore_*.py
+tests/scratch_*.py
