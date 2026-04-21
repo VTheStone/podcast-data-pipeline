@@ -1,18 +1,18 @@
-# Podcast Data Pipeline
+# 🎙️ Podcast Data Pipeline
 
-> Pipeline completo de ingestão, transcrição e busca semântica de episódios de podcast,
-> utilizando Whisper, ChromaDB e LLMs locais.
+> End-to-end pipeline for podcast audio ingestion, transcription, and semantic search
+> using Whisper, ChromaDB and local LLMs.
 
-## Arquitetura
+## Architecture
 
 ```mermaid
 graph LR
-    A[RSS Feed] --> B[Download Áudios]
-    B --> C[Transcrição Whisper]
+    A[RSS Feed] --> B[Audio Download]
+    B --> C[Whisper Transcription]
     C --> D[Chunking + Embeddings]
     D --> E[ChromaDB]
     E --> F[RAG + LLM]
-    F --> G[Interface de Query]
+    F --> G[Query Interface]
 ```
 
 ## Stack
@@ -22,37 +22,37 @@ graph LR
 ![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
 ![Ollama](https://img.shields.io/badge/LLM-Ollama-purple)
 
-## Status do Projeto
+## Project Status
 
-| Fase | Status | Descrição |
+| Phase | Status | Description |
 |---|---|---|
-| 1. Coleta de Dados | ⏳ Em andamento | Ingestão via RSS feed |
-| 2. Transcrição | ⏳ Planejado | faster-whisper |
-| 3. Diarização | ⏳ Planejado | pyannote/audio |
-| 4. Chunking | ⏳ Planejado | LlamaIndex |
-| 5. Indexação Vetorial | ⏳ Planejado | ChromaDB |
-| 6. RAG + LLM | ⏳ Planejado | Ollama + llama3 |
+| 1. Data Collection | 🔄 In Progress | RSS feed ingestion |
+| 2. Transcription | ⏳ Planned | faster-whisper |
+| 3. Diarization | ⏳ Planned | pyannote/audio |
+| 4. Chunking | ⏳ Planned | LlamaIndex |
+| 5. Vector Indexing | ⏳ Planned | ChromaDB |
+| 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
 
-## Como Rodar
+## Getting Started
 
 ```bash
-git clone https://github.com/seu-usuario/podcast-data-pipeline
+git clone https://github.com/VTheStone/podcast-data-pipeline
 cd podcast-data-pipeline
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Preencha o .env com suas variáveis
+# Fill in your environment variables in .env
 ```
 
-## Documentação
+## Documentation
 
-Cada fase tem documentação detalhada em `/docs`:
-- [Fase 1 — Coleta de Dados](docs/fase1/)
+Each phase has detailed documentation in `/docs`:
+- [Phase 1 — Data Collection](docs/phase1/)
 
-## Aprendizados Técnicos
+## Key Learnings
 
-Projeto desenvolvido com foco em aprendizado de:
-- Data Engineering (pipelines, idempotência, orquestração)
+Project developed with focus on:
+- Data Engineering (pipelines, idempotency, orchestration)
 - MLOps (ASR, embeddings, RAG)
-- Boas práticas (versionamento, documentação, testes)
+- Best practices (versioning, documentation, testing)
