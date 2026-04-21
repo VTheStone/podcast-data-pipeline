@@ -1,0 +1,22 @@
+# Ingestão
+feedparser==6.0.11
+yt-dlp==2024.3.10
+requests==2.31.0
+tqdm==4.66.2
+
+# Transcrição (fase 2)
+# faster-whisper==1.0.1
+
+# Processamento (fase 4)
+# llama-index==0.10.0
+# sentence-transformers==2.7.0
+
+# Vector DB (fase 5)
+# chromadb==0.4.24
+
+# LLM (fase 6)
+# groq==0.5.0
+
+# Utilitários
+python-dotenv==1.0.1
+loguru==0.7.2

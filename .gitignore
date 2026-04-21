@@ -1,0 +1,24 @@
+# Dados e modelos (arquivos grandes)
+data/raw/
+data/transcripts/
+data/chunks/
+*.mp3
+*.mp4
+*.m4a
+*.wav
+*.pt
+
+# Ambiente
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
