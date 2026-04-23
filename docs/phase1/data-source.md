@@ -35,6 +35,12 @@
 - Others repeat the title in `summary` and use `content` for real description
 - **Solution:** Use `content[0].value` as primary source with `summary` as fallback
 
+### Missing image URL on older episodes
+- Episodes from NerdCast 01 to NerdCast 669 (587 episodes) have no image in the RSS feed
+- The `<itunes:image>` tag is absent in the XML for these episodes
+- This is a feed limitation, not a pipeline bug
+- **Impact:** Low — image URL is metadata only, not required for transcription or RAG
+
 ## Decision Log
 
 **Decision:** Use RSS feed over Spotify API  

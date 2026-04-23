@@ -26,7 +26,7 @@ graph LR
 
 | Phase | Status | Description |
 |---|---|---|
-| 1. Data Collection | 🔄 In Progress | RSS feed ingestion |
+| 1. Data Collection | ✅ Complete | 1052 episodes catalogued, 9 downloaded, 647MB |
 | 2. Transcription | ⏳ Planned | faster-whisper |
 | 3. Diarization | ⏳ Planned | pyannote/audio |
 | 4. Chunking | ⏳ Planned | LlamaIndex |
