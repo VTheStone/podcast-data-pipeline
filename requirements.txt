@@ -1,8 +1,15 @@
 # Ingestão
-feedparser==6.0.11
+feedparser==6.0.12
 yt-dlp==2024.3.10
-requests==2.31.0
+requests==2.33.1
 tqdm==4.66.2
+
+# Database
+sqlalchemy==2.0.40
+
+# Utilitários
+python-dotenv==1.0.1
+loguru==0.7.2
 
 # Transcrição (fase 2)
 # faster-whisper==1.0.1
