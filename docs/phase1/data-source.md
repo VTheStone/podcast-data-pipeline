@@ -24,11 +24,16 @@
 | image_url     | `<itunes:image href>`          | string  | Episode cover art            |
 | explicit      | `<itunes:explicit>`            | string  | "yes" or "no"                |
 
-## Known Limitations
+## Known Limitations or Issues
 
 - `<enclosure length>` is always 0 — file size unavailable before download
 - RSS URL is a custom filter endpoint, not the original Megaphone feed
 - Feed may not contain full episode history (to be validated in Milestone 3)
+
+### Inconsistent description field
+- Some episodes use `summary` for real description
+- Others repeat the title in `summary` and use `content` for real description
+- **Solution:** Use `content[0].value` as primary source with `summary` as fallback
 
 ## Decision Log
 
@@ -56,3 +61,4 @@ Tool: feedparser 6.0.11
 | `guid` unique per episode      | ✅          |
 | `duration` field available     | ✅          |
 | `enclosure length` available   | ❌ Always 0 |
+
