@@ -26,3 +26,9 @@ __pycache__/
 # Exploratory scripts
 tests/explore_*.py
 tests/scratch_*.py
+
+# Database
+data/metadata/podcast.db
+
+# Generated catalogs
+data/metadata/catalog.json
