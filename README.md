@@ -17,10 +17,14 @@ graph LR
 
 ## Stack
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Whisper](https://img.shields.io/badge/ASR-Whisper-green)
+## Stack
+
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![Whisper](https://img.shields.io/badge/ASR-Whisper_large--v3-green)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.6.0+cu124-orange)
 ![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
 ![Ollama](https://img.shields.io/badge/LLM-Ollama-purple)
+![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
 
 ## Project Status
 
@@ -49,6 +53,17 @@ cp .env.example .env
 
 Each phase has detailed documentation in `/docs`:
 - [Phase 1 — Data Collection](docs/phase1/)
+  - [Data Source Mapping](docs/phase1/data-source.md)
+  - [Environment Setup](docs/phase1/environment.md)
+  - [Download Pipeline](docs/phase1/download-pipeline.md)
+  - [Final Report](docs/phase1/final-report.md)
+- [Phase 2 — Transcription](docs/phase2/)
+  - [Whisper Setup](docs/phase2/whisper-setup.md)
+  - [Final Report](docs/phase2/final-report.md)
+- Phase 3 — Diarization *(planned)*
+- Phase 4 — Chunking *(planned)*
+- Phase 5 — Vector Indexing *(planned)*
+- Phase 6 — RAG + LLM *(planned)*
 
 ## Key Learnings
 
