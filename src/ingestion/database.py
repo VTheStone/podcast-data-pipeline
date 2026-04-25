@@ -52,7 +52,7 @@ class Episode(Base):
 
 
 class Transcription(Base):
-    """Full transcription of a podcast episode."""
+    """Full transcription of a podcast episode with quality metrics."""
 
     __tablename__ = "transcriptions"
 
@@ -62,6 +62,16 @@ class Transcription(Base):
     language = Column(String, default="pt")
     model_used = Column(String)
     created_at = Column(DateTime, default=datetime.now)
+
+    # Quality metrics
+    total_segments = Column(Integer, nullable=True)
+    total_chars = Column(Integer, nullable=True)
+    estimated_words = Column(Integer, nullable=True)
+    avg_logprob = Column(Float, nullable=True)        # confidence score
+    repetition_rate = Column(Float, nullable=True)    # 1.0 = no repetition
+    chars_per_minute = Column(Float, nullable=True)   # coverage metric
+    language_confidence = Column(Float, nullable=True)
+    hallucination_flag = Column(Boolean, default=False)  # True if repetition_rate < 0.5
 
     # Relationships
     episode = relationship("Episode", back_populates="transcription")

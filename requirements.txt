@@ -5,6 +5,7 @@ tqdm==4.66.2
 
 # Database
 sqlalchemy==2.0.40
+alembic==1.15.2
 
 # Utilitários
 python-dotenv==1.0.1
