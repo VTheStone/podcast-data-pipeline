@@ -58,7 +58,7 @@ WHISPER_BEAM_SIZE = 5
 WHISPER_INITIAL_PROMPT = (
     "Transcrição de podcast brasileiro de cultura pop. "
     "Preserve nomes próprios, termos técnicos e palavras em inglês "
-    "exatamente como são falados. Exemplos: Alottoni, Azaghal, "
+    "exatamente como são falados. Exemplos: Alenxandre Ottoni, Alottoni, Azaghal, "
     "NerdCast, Jovem Nerd, RPG, cosplay, anime, manga."
 )
 WHISPER_VAD_FILTER = False
