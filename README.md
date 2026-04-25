@@ -26,8 +26,8 @@ graph LR
 
 | Phase | Status | Description |
 |---|---|---|
-| 1. Data Collection | ✅ Complete | 1052 episodes catalogued, 9 downloaded, 647MB |
-| 2. Transcription | ⏳ Planned | faster-whisper |
+| 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
+| 2. Transcription | 🔄 In Progress | large-v3, GPU, ~208h processing time |
 | 3. Diarization | ⏳ Planned | pyannote/audio |
 | 4. Chunking | ⏳ Planned | LlamaIndex |
 | 5. Vector Indexing | ⏳ Planned | ChromaDB |
