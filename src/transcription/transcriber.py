@@ -38,7 +38,7 @@ def load_model() -> WhisperModel:
     return model
 
 
-def transcribe_episode(model: WhisperModel, audio_path: Path) -> list[dict]:
+def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
     """
     Transcribes a single audio file into segments.
 
@@ -47,9 +47,9 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> list[dict]:
         audio_path: Path to the MP3 audio file.
 
     Returns:
-        List of segment dictionaries with start, end and text.
+        Tuple of (segments list, transcription info object).
     """
-    segments, info = model.transcribe(
+    segments_gen, info = model.transcribe(
         str(audio_path),
         language=WHISPER_LANGUAGE,
         beam_size=WHISPER_BEAM_SIZE,
@@ -63,14 +63,15 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> list[dict]:
     logger.info(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
 
     results = []
-    for segment in segments:
+    for segment in segments_gen:
         results.append({
             "start": round(segment.start, 2),
             "end": round(segment.end, 2),
             "text": segment.text.strip(),
+            "avg_logprob": round(segment.avg_logprob, 4),
         })
 
-    return results
+    return results, info
 
 
 def get_audio_path(episode: Episode, audio_dir: str) -> Path | None:
@@ -102,15 +103,16 @@ def save_transcription(
     engine,
     episode: Episode,
     segments: list[dict],
+    metrics: dict,
 ) -> None:
     """
-    Saves transcription segments to the database.
-    Updates episode transcribed flag.
+    Saves transcription and quality metrics to the database.
 
     Args:
         engine: SQLAlchemy engine instance.
         episode: Episode database model instance.
         segments: List of transcription segments.
+        metrics: Quality metrics dictionary.
     """
     full_text = " ".join(seg["text"] for seg in segments)
 
@@ -120,6 +122,7 @@ def save_transcription(
             full_text=full_text,
             language=WHISPER_LANGUAGE,
             model_used=WHISPER_MODEL,
+            **metrics,
         )
         session.add(transcription)
 
@@ -127,7 +130,70 @@ def save_transcription(
         ep.transcribed = True
 
         session.commit()
-        logger.success(f"Transcription saved: {len(segments)} segments, {len(full_text)} chars")
+        logger.success(
+            f"Transcription saved: {metrics['total_segments']} segments, "
+            f"{metrics['total_chars']} chars, "
+            f"repetition_rate={metrics['repetition_rate']}, "
+            f"hallucination={metrics['hallucination_flag']}"
+        )
+
+
+def calculate_metrics(
+    segments: list[dict],
+    info,
+    episode: Episode,
+) -> dict:
+    """
+    Calculates quality metrics for a transcription.
+
+    Args:
+        segments: List of transcription segments.
+        info: Whisper transcription info object.
+        episode: Episode database model instance.
+
+    Returns:
+        Dictionary with quality metrics.
+    """
+    full_text = " ".join(seg["text"] for seg in segments)
+    total_chars = len(full_text)
+    estimated_words = total_chars // 5
+
+    # Repetition rate — detect hallucination loops
+    words = full_text.split()
+    window = 50
+    if len(words) >= window:
+        chunks = [
+            " ".join(words[i:i+window])
+            for i in range(0, len(words) - window, window)
+        ]
+        unique_chunks = len(set(chunks))
+        repetition_rate = unique_chunks / len(chunks) if chunks else 1.0
+    else:
+        repetition_rate = 1.0
+
+    # Coverage — chars per minute of audio
+    duration_minutes = episode.duration_seconds / 60
+    chars_per_minute = total_chars / duration_minutes if duration_minutes > 0 else 0
+
+    # Confidence score — average log probability
+    avg_logprob = (
+        sum(seg.get("avg_logprob", 0) for seg in segments) / len(segments)
+        if segments else 0
+    )
+
+    # Hallucination flag
+    hallucination_flag = repetition_rate < 0.5
+
+    return {
+        "total_segments": len(segments),
+        "total_chars": total_chars,
+        "estimated_words": estimated_words,
+        "avg_logprob": round(avg_logprob, 4),
+        "repetition_rate": round(repetition_rate, 4),
+        "chars_per_minute": round(chars_per_minute, 1),
+        "language_confidence": round(info.language_probability, 4),
+        "hallucination_flag": hallucination_flag,
+    }
 
 
 def run(max_episodes: int = None):
@@ -177,8 +243,9 @@ def run(max_episodes: int = None):
             continue
 
         try:
-            segments = transcribe_episode(model, audio_path)
-            save_transcription(engine, episode, segments)
+            segments, info = transcribe_episode(model, audio_path)
+            metrics = calculate_metrics(segments, info, episode)
+            save_transcription(engine, episode, segments, metrics)
             success_count += 1
             logger.info(f"Progress: {i}/{total} | Success: {success_count} | Failed: {failed_count}")
 
