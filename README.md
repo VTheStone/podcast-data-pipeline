@@ -34,13 +34,13 @@ graph LR
 | Phase | Status | Description |
 |---|---|---|
 | 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
-| 2. Transcription | 🔄 In Progress | large-v3, GPU, ~208h processing time |
-| 3. Diarization | 🔄 In Progress | pyannote 4.0, GPU, ~104h processing time |
-| 4. Chunking | ⏳ Planned | LlamaIndex |
+| 2. Transcription | 🔄 In Progress | large-v3 with timestamps, GPU |
+| 3. Diarization & Enrollment | 🔄 In Progress | pyannote 4.0 + speaker identification via self-introduction |
+| 4. Chunking | ⏳ Planned | LlamaIndex with speaker labels |
 | 5. Vector Indexing | ⏳ Planned | ChromaDB |
 | 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
-| 7. Speaker Identification | ⏳ Planned | Speaker enrollment via self-introduction |
-| 8. Progressive Enrollment | ⏳ Planned | Cross-episode speaker consolidation |
+| 7. Query Interface | ⏳ Planned | Streamlit UI for end users (MVP delivery) |
+| 8. Identification Optimization | ⏳ Planned | Diarization fine-tuning + enrollment refinement + cross-episode speaker consolidation |
 
 ## Getting Started
 
