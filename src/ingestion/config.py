@@ -67,3 +67,17 @@ WHISPER_COMPRESSION_RATIO_THRESHOLD = 3.0
 WHISPER_CONDITION_ON_PREVIOUS_TEXT = False
 DEVICE = get_device()
 COMPUTE_TYPE = get_compute_type(DEVICE)
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Diarization
+HF_TOKEN = os.getenv("HF_TOKEN")
+DIARIZATION_MODEL = "pyannote/speaker-diarization-3.1"
+DIARIZATION_MIN_SPEAKERS = 2
+DIARIZATION_MAX_SPEAKERS = 8        # NerdCast raramente tem mais que 6
+SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
+SPEAKER_SIMILARITY_THRESHOLD = 0.85  # limiar para identificação de locutor
+DIARIZATION_DIR = "data/diarization" # pasta para outputs intermediários

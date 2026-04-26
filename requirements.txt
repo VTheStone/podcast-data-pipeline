@@ -7,13 +7,21 @@ tqdm==4.66.2
 sqlalchemy==2.0.40
 alembic==1.15.2
 
-# Utilitários
+# Utilities
 python-dotenv==1.0.1
 loguru==0.7.2
 
+# Optional - use if podcast has no direct MP3 URLs in RSS
+# yt-dlp==2024.3.10
+
 # Transcription (phase 2)
 faster-whisper==1.1.1
-torch==2.6.0+cu124  # install via: pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch==2.10.0+cu128  # install via: pip install torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cu128
+torchaudio==2.10.0+cu128
+torchvision==0.25.0+cu128
+
+# Diarization (phase 3)
+pyannote.audio==4.0.4
 
 # Processamento (fase 4)
 # llama-index==0.10.0
@@ -25,6 +33,6 @@ torch==2.6.0+cu124  # install via: pip install torch --index-url https://downloa
 # LLM (fase 6)
 # groq==0.5.0
 
-# Utilitários
+# Utilities
 python-dotenv==1.0.1
 loguru==0.7.2
