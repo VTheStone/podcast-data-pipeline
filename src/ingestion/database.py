@@ -39,6 +39,7 @@ class Episode(Base):
     downloaded = Column(Boolean, default=False)
     transcribed = Column(Boolean, default=False)
     chunked = Column(Boolean, default=False)
+    diarized = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
@@ -52,7 +53,7 @@ class Episode(Base):
 
 
 class Transcription(Base):
-    """Full transcription of a podcast episode."""
+    """Full transcription of a podcast episode with quality metrics."""
 
     __tablename__ = "transcriptions"
 
@@ -62,6 +63,16 @@ class Transcription(Base):
     language = Column(String, default="pt")
     model_used = Column(String)
     created_at = Column(DateTime, default=datetime.now)
+
+    # Quality metrics
+    total_segments = Column(Integer, nullable=True)
+    total_chars = Column(Integer, nullable=True)
+    estimated_words = Column(Integer, nullable=True)
+    avg_logprob = Column(Float, nullable=True)        # confidence score
+    repetition_rate = Column(Float, nullable=True)    # 1.0 = no repetition
+    chars_per_minute = Column(Float, nullable=True)   # coverage metric
+    language_confidence = Column(Float, nullable=True)
+    hallucination_flag = Column(Boolean, default=False)  # True if repetition_rate < 0.5
 
     # Relationships
     episode = relationship("Episode", back_populates="transcription")
@@ -94,6 +105,56 @@ class Chunk(Base):
     def __repr__(self):
         return f"<Chunk {self.chunk_index} episode_id={self.episode_id}>"
 
+class Speaker(Base):
+    """Known speakers with consolidated voice embeddings."""
+
+    __tablename__ = "speakers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    role = Column(String)               # "host", "recurring_guest", "guest"
+    is_host = Column(Boolean, default=False)
+
+    # Consolidated embedding
+    voice_embedding = Column(Text, nullable=True)    # JSON array
+    embedding_count = Column(Integer, default=0)
+    avg_confidence = Column(Float, nullable=True)
+    confidence_threshold = Column(Float, default=0.85)
+
+    # Tracking
+    first_seen_episode = Column(String, nullable=True)
+    last_seen_episode = Column(String, nullable=True)
+    total_appearances = Column(Integer, default=0)
+    enrollment_episodes = Column(Text, nullable=True)  # JSON list
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # Relationships
+    embeddings = relationship("SpeakerEmbedding", back_populates="speaker")
+
+    def __repr__(self):
+        return f"<Speaker {self.name}>"
+
+
+class SpeakerEmbedding(Base):
+    """Individual embedding per episode per speaker — raw history."""
+
+    __tablename__ = "speaker_embeddings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    speaker_id = Column(Integer, ForeignKey("speakers.id"))
+    episode_id = Column(String, ForeignKey("episodes.id"))
+    embedding = Column(Text)            # JSON array
+    confidence = Column(Float)
+    source = Column(String)             # "self_introduction", "identified_segment"
+    created_at = Column(DateTime, default=datetime.now)
+
+    # Relationships
+    speaker = relationship("Speaker", back_populates="embeddings")
+
+    def __repr__(self):
+        return f"<SpeakerEmbedding speaker_id={self.speaker_id} episode_id={self.episode_id}>"
 
 def get_engine(db_path: str = "data/metadata/podcast.db"):
     """

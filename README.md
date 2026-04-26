@@ -17,21 +17,30 @@ graph LR
 
 ## Stack
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Whisper](https://img.shields.io/badge/ASR-Whisper-green)
+## Stack
+
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.10.0+cu128-orange)
+![Whisper](https://img.shields.io/badge/ASR-Whisper_large--v3-green)
+![pyannote](https://img.shields.io/badge/Diarization-pyannote_4.0-red)
 ![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
 ![Ollama](https://img.shields.io/badge/LLM-Ollama-purple)
+![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
+
+## Project Status
 
 ## Project Status
 
 | Phase | Status | Description |
 |---|---|---|
 | 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
-| 2. Transcription | ⏳ Planned | faster-whisper |
-| 3. Diarization | ⏳ Planned | pyannote/audio |
+| 2. Transcription | 🔄 In Progress | large-v3, GPU, ~208h processing time |
+| 3. Diarization | 🔄 In Progress | pyannote 4.0, GPU, ~104h processing time |
 | 4. Chunking | ⏳ Planned | LlamaIndex |
 | 5. Vector Indexing | ⏳ Planned | ChromaDB |
 | 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
+| 7. Speaker Identification | ⏳ Planned | Speaker enrollment via self-introduction |
+| 8. Progressive Enrollment | ⏳ Planned | Cross-episode speaker consolidation |
 
 ## Getting Started
 
@@ -49,6 +58,17 @@ cp .env.example .env
 
 Each phase has detailed documentation in `/docs`:
 - [Phase 1 — Data Collection](docs/phase1/)
+  - [Data Source Mapping](docs/phase1/data-source.md)
+  - [Environment Setup](docs/phase1/environment.md)
+  - [Download Pipeline](docs/phase1/download-pipeline.md)
+  - [Final Report](docs/phase1/final-report.md)
+- [Phase 2 — Transcription](docs/phase2/)
+  - [Whisper Setup](docs/phase2/whisper-setup.md)
+  - [Final Report](docs/phase2/final-report.md)
+- Phase 3 — Diarization *(planned)*
+- Phase 4 — Chunking *(planned)*
+- Phase 5 — Vector Indexing *(planned)*
+- Phase 6 — RAG + LLM *(planned)*
 
 ## Key Learnings
 
