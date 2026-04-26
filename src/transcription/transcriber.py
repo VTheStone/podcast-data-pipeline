@@ -8,6 +8,7 @@ from pathlib import Path
 from loguru import logger
 from faster_whisper import WhisperModel
 from sqlalchemy.orm import Session
+from src.ingestion.database import Episode, Transcription, TranscriptionSegment, get_engine
 
 from src.ingestion.config import (
     RAW_AUDIO_DIR,
@@ -108,7 +109,7 @@ def save_transcription(
     metrics: dict,
 ) -> None:
     """
-    Saves transcription and quality metrics to the database.
+    Saves transcription, quality metrics and individual segments to the database.
 
     Args:
         engine: SQLAlchemy engine instance.
@@ -127,6 +128,20 @@ def save_transcription(
             **metrics,
         )
         session.add(transcription)
+        session.flush()  # get transcription.id before saving segments
+
+        # Save individual segments with timestamps
+        for i, seg in enumerate(segments):
+            segment = TranscriptionSegment(
+                episode_id=episode.id,
+                transcription_id=transcription.id,
+                segment_index=i,
+                text=seg["text"],
+                start_time=seg["start"],
+                end_time=seg["end"],
+                avg_logprob=seg.get("avg_logprob"),
+            )
+            session.add(segment)
 
         ep = session.get(Episode, episode.id)
         ep.transcribed = True

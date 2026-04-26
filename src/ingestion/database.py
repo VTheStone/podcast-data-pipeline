@@ -47,6 +47,7 @@ class Episode(Base):
     # Relationships
     transcription = relationship("Transcription", back_populates="episode", uselist=False)
     chunks = relationship("Chunk", back_populates="episode")
+    segments = relationship("TranscriptionSegment", back_populates="episode")
 
     def __repr__(self):
         return f"<Episode {self.title}>"
@@ -77,10 +78,34 @@ class Transcription(Base):
     # Relationships
     episode = relationship("Episode", back_populates="transcription")
     chunks = relationship("Chunk", back_populates="transcription")
+    segments = relationship("TranscriptionSegment", back_populates="transcription")
 
     def __repr__(self):
         return f"<Transcription episode_id={self.episode_id}>"
 
+
+class TranscriptionSegment(Base):
+    """Individual transcription segment with timestamps from Whisper."""
+
+    __tablename__ = "transcription_segments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    episode_id = Column(String, ForeignKey("episodes.id"), nullable=False)
+    transcription_id = Column(Integer, ForeignKey("transcriptions.id"), nullable=False)
+    segment_index = Column(Integer)
+    text = Column(Text)
+    start_time = Column(Float)
+    end_time = Column(Float)
+    avg_logprob = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
+
+    # Relationships
+    episode = relationship("Episode", back_populates="segments")
+    transcription = relationship("Transcription", back_populates="segments")
+
+    def __repr__(self):
+        return f"<TranscriptionSegment {self.segment_index} episode_id={self.episode_id}>"
+    
 
 class Chunk(Base):
     """Text chunk from a transcription, used for RAG."""
