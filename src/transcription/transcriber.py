@@ -21,6 +21,7 @@ from src.ingestion.config import (
     WHISPER_CONDITION_ON_PREVIOUS_TEXT,
     DEVICE,
     COMPUTE_TYPE,
+    WHISPER_CHUNK_LENGTH,
 )
 from src.ingestion.database import Episode, Transcription, get_engine
 
@@ -58,6 +59,7 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict
         no_speech_threshold=WHISPER_NO_SPEECH_THRESHOLD,
         compression_ratio_threshold=WHISPER_COMPRESSION_RATIO_THRESHOLD,
         condition_on_previous_text=WHISPER_CONDITION_ON_PREVIOUS_TEXT,
+        chunk_length=WHISPER_CHUNK_LENGTH,  # process in chunks to avoid OOM
     )
 
     logger.info(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
