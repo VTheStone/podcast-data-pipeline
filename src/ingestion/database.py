@@ -39,6 +39,7 @@ class Episode(Base):
     downloaded = Column(Boolean, default=False)
     transcribed = Column(Boolean, default=False)
     chunked = Column(Boolean, default=False)
+    diarized = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
