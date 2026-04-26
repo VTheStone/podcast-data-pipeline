@@ -20,11 +20,14 @@ graph LR
 ## Stack
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.10.0+cu128-orange)
 ![Whisper](https://img.shields.io/badge/ASR-Whisper_large--v3-green)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.6.0+cu124-orange)
+![pyannote](https://img.shields.io/badge/Diarization-pyannote_4.0-red)
 ![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
 ![Ollama](https://img.shields.io/badge/LLM-Ollama-purple)
 ![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
+
+## Project Status
 
 ## Project Status
 
@@ -32,10 +35,12 @@ graph LR
 |---|---|---|
 | 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
 | 2. Transcription | 🔄 In Progress | large-v3, GPU, ~208h processing time |
-| 3. Diarization | ⏳ Planned | pyannote/audio |
+| 3. Diarization | 🔄 In Progress | pyannote 4.0, GPU, ~104h processing time |
 | 4. Chunking | ⏳ Planned | LlamaIndex |
 | 5. Vector Indexing | ⏳ Planned | ChromaDB |
 | 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
+| 7. Speaker Identification | ⏳ Planned | Speaker enrollment via self-introduction |
+| 8. Progressive Enrollment | ⏳ Planned | Cross-episode speaker consolidation |
 
 ## Getting Started
 

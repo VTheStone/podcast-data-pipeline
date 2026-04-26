@@ -16,12 +16,12 @@ loguru==0.7.2
 
 # Transcription (phase 2)
 faster-whisper==1.1.1
-torch==2.10.0+cu128  # install via: pip install torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cu128
-torchaudio==2.10.0+cu128
-torchvision==0.25.0+cu128
+# PyTorch — install separately via:
+# pip install torch==2.10.0 torchaudio==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cu128
 
 # Diarization (phase 3)
 pyannote.audio==4.0.4
+soundfile==0.13.1
 
 # Processamento (fase 4)
 # llama-index==0.10.0
