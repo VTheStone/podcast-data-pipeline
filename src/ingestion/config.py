@@ -78,7 +78,12 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 DIARIZATION_MODEL = "pyannote/speaker-diarization-3.1"
 DIARIZATION_MIN_SPEAKERS = 2
-DIARIZATION_MAX_SPEAKERS = 8        # NerdCast raramente tem mais que 6
+DIARIZATION_MAX_SPEAKERS = 8        # NerdCast rarely has over 6 participants
 SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
-SPEAKER_SIMILARITY_THRESHOLD = 0.85  # limiar para identificação de locutor
-DIARIZATION_DIR = "data/diarization" # pasta para outputs intermediários
+SPEAKER_SIMILARITY_THRESHOLD = 0.85  # threshold to identify speaker
+DIARIZATION_DIR = "data/diarization" # folder for outpus 
+
+# Chunking (phase 4)
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
+CHUNK_SEPARATORS = ["\n\n", "\n", ". ", "! ", "? ", " ", ""]
