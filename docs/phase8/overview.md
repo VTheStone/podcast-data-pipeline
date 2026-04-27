@@ -24,6 +24,12 @@ in the existing interface.
 - Build robust voice profiles for hosts using progressive enrollment
 - Use weighted average of embeddings based on confidence scores
 
+### 4. Semantic Chunking Evaluation
+- Compare current recursive chunking with semantic chunking approach
+- Measure retrieval quality improvement on representative queries
+- Evaluate cost vs quality trade-off (semantic chunking requires embedding pass)
+- Consider hybrid approach (recursive with semantic boundary detection)
+
 ## Database Schema
 
 The schema for this phase is already in place (Speaker and SpeakerEmbedding
