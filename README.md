@@ -29,14 +29,12 @@ graph LR
 
 ## Project Status
 
-## Project Status
-
 | Phase | Status | Description |
 |---|---|---|
 | 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
 | 2. Transcription | 🔄 In Progress | large-v3 with timestamps, GPU |
 | 3. Diarization & Enrollment | ✅ Complete | pyannote 4.0 + speaker identification + alignment |
-| 4. Chunking | ⏳ Planned | LlamaIndex with speaker labels |
+| 4. Chunking | ✅ Complete | Recursive chunking, 500 tokens, tiktoken |
 | 5. Vector Indexing | ⏳ Planned | ChromaDB |
 | 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
 | 7. Query Interface | ⏳ Planned | Streamlit UI for end users (MVP delivery) |
