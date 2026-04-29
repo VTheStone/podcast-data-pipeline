@@ -29,7 +29,8 @@ llama-index-embeddings-huggingface==0.7.0
 tiktoken==0.12.0
 
 # Vector DB (phase 5)
-# chromadb==0.4.24
+chromadb==1.5.8
+sentence-transformers<5.0
 
 # LLM (fase 6)
 # groq==0.5.0
