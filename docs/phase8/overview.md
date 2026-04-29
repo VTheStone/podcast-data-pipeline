@@ -30,6 +30,39 @@ in the existing interface.
 - Evaluate cost vs quality trade-off (semantic chunking requires embedding pass)
 - Consider hybrid approach (recursive with semantic boundary detection)
 
+### 5. Infrastructure Migration
+
+When moving from local development to production deployment, migrate:
+
+- **SQLite → PostgreSQL** for relational data
+  - Multi-application access
+  - Better concurrency and transaction handling
+  - Industry-standard for production
+- **ChromaDB embedded → Qdrant or Weaviate self-hosted**
+  - Multi-application access to vector index
+  - Better performance at scale
+  - Advanced filtering and re-ranking features
+- **Alternative consideration: pgvector**
+  - Single database for both relational and vector data
+  - Simpler operations, fewer dependencies
+  - Trade-off: less specialized than dedicated vector DBs
+
+The current SQLAlchemy abstraction means the migration is mostly a connection
+string change for SQLite → PostgreSQL. ChromaDB → Qdrant requires changes
+in the indexing and retrieval modules.
+
+### 6. Embedding Model A/B Testing
+
+After MVP delivery, evaluate alternative embedding models with domain-specific
+queries:
+
+- Current baseline: paraphrase-multilingual-mpnet-base-v2 (768 dim)
+- Candidates: BAAI/bge-m3 (1024 dim), intfloat/multilingual-e5-large (1024 dim)
+- Methodology: same query set, measure precision@5 and MRR
+- Decision criteria: improvement must be statistically significant and
+  worth the additional computational cost
+- Test should use real user queries collected from the Phase 7 interface
+
 ## Database Schema
 
 The schema for this phase is already in place (Speaker and SpeakerEmbedding
