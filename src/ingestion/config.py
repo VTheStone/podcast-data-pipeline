@@ -87,3 +87,10 @@ DIARIZATION_DIR = "data/diarization" # folder for outpus
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 CHUNK_SEPARATORS = ["\n\n", "\n", ". ", "! ", "? ", " ", ""]
+
+# Vector indexing (phase 5)
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+EMBEDDING_DIMENSIONS = 768
+CHROMA_DB_PATH = "data/chroma_db"
+CHROMA_COLLECTION_NAME = "podcast_chunks"
+DISTANCE_METRIC = "cosine"
