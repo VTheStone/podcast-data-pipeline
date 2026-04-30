@@ -27,15 +27,13 @@ graph LR
 ![Ollama](https://img.shields.io/badge/LLM-Ollama-purple)
 ![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
 
-## Project Status
-
 | Phase | Status | Description |
 |---|---|---|
 | 1. Data Collection | ✅ Complete | 1052 episodes, 55.6GB, 1734h of audio |
 | 2. Transcription | 🔄 In Progress | large-v3 with timestamps, GPU |
 | 3. Diarization & Enrollment | ✅ Complete | pyannote 4.0 + speaker identification + alignment |
 | 4. Chunking | ✅ Complete | Recursive chunking, 500 tokens, tiktoken |
-| 5. Vector Indexing | ⏳ Planned | ChromaDB |
+| 5. Vector Indexing | ✅ Complete | ChromaDB, mpnet-base-v2, 768 dims |
 | 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
 | 7. Query Interface | ⏳ Planned | Streamlit UI for end users (MVP delivery) |
 | 8. Identification Optimization | ⏳ Planned | Diarization fine-tuning + enrollment refinement + cross-episode consolidation |
