@@ -30,5 +30,8 @@ tests/scratch_*.py
 # Database
 data/metadata/podcast.db
 
+# Vector DB
+data/chroma_db/
+
 # Generated catalogs
 data/metadata/catalog.json
