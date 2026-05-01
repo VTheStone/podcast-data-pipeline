@@ -94,3 +94,9 @@ EMBEDDING_DIMENSIONS = 768
 CHROMA_DB_PATH = "data/chroma_db"
 CHROMA_COLLECTION_NAME = "podcast_chunks"
 DISTANCE_METRIC = "cosine"
+
+# LLM (phase 6)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+LLM_MODEL = "llama-3.3-70b-versatile"
+LLM_TEMPERATURE = 0.3
+LLM_MAX_TOKENS = 1024
