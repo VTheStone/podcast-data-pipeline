@@ -1,0 +1,423 @@
+[
+  {
+    "id": "F01",
+    "type": "factual",
+    "query": "Quem é o Alexandre Ottoni?",
+    "answer": "O Alexandre Ottoni é mencionado como \"o jovem nerd\" [Trecho 5, Ep: NerdCast 857, 34:37] e também é citado como alguém que pode saber mais sobre um determinado assunto [Trecho 1, Ep: NerdCast 844, 74:41]. Além disso, ele é mencionado como alguém que pode ser inspirado por outro personagem, Bernard Corden [Trecho 3, Ep: NerdCast 690, 24:48]. No entanto, não há informações mais detalhadas sobre quem é o Alexandre Ottoni nos trechos fornecidos.",
+    "sources": [
+      {
+        "episode_title": "NerdCast 844 - O poder de Roma",
+        "time": "74:41",
+        "similarity": 0.597
+      },
+      {
+        "episode_title": "NerdCast 764 - Os próximos 200 anos",
+        "time": "31:03",
+        "similarity": 0.575
+      },
+      {
+        "episode_title": "NerdCast 690 - O futuro (des)esperado das I.A.s",
+        "time": "24:48",
+        "similarity": 0.564
+      },
+      {
+        "episode_title": "NerdCast 944 - House of the Dragon: dancem, dragões, dancem!",
+        "time": "61:37",
+        "similarity": 0.558
+      },
+      {
+        "episode_title": "NerdCast 857 - Qual é a pauta? Notas de uva, TV Pow e o golpe do Mau!",
+        "time": "34:37",
+        "similarity": 0.55
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 2.58,
+    "tokens_used": 2455,
+    "expected_episodes": [
+      "NerdCast"
+    ],
+    "notes": "Deve identificar o host principal do podcast"
+  },
+  {
+    "id": "F02",
+    "type": "factual",
+    "query": "Quais astronautas participaram da missão Artemis II?",
+    "answer": "Os astronautas que participaram da missão Artemis II mencionados nos trechos são: Jeremy, Victor Glover, Cristina e Reed Wiseman [Trecho 1, Ep: NerdCast 1026, 46:28]. Além disso, também é mencionada a presença de uma pessoa de cor e um canadense na missão, mas não são nomeados [Trecho 5, Ep: NerdCast 1026, 45:14].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "46:28",
+        "similarity": 0.663
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "30:26",
+        "similarity": 0.633
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "24:44",
+        "similarity": 0.621
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "10:09",
+        "similarity": 0.61
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "45:14",
+        "similarity": 0.593
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 1.0,
+    "tokens_used": 2821,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve listar os 4 astronautas corretamente"
+  },
+  {
+    "id": "F03",
+    "type": "factual",
+    "query": "O que é o programa Artemis da NASA?",
+    "answer": "O programa Artemis da NASA é uma iniciativa organizada para levar a humanidade novamente à Lua [Trecho 5, Episódio: NerdCast 1026, 43:42]. Ele engloba um monte de missões e instâncias diferentes de interações com o mesmo objetivo [Trecho 5, Episódio: NerdCast 1026, 43:42]. O programa Artemis é mais abrangente do que o programa Apolo, pois inclui missões de carga e outras interações [Trecho 5, Episódio: NerdCast 1026, 43:42].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "30:26",
+        "similarity": 0.639
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "86:47",
+        "similarity": 0.638
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "29:12",
+        "similarity": 0.632
+      },
+      {
+        "episode_title": "NerdCast 835 - O Espaço Disputado!",
+        "time": "105:31",
+        "similarity": 0.626
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "43:42",
+        "similarity": 0.623
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 1.02,
+    "tokens_used": 2944,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve explicar o programa sem inventar datas ou detalhes"
+  },
+  {
+    "id": "C01",
+    "type": "comparativa",
+    "query": "Qual a diferença entre a Artemis I e a Artemis II?",
+    "answer": "A diferença entre a Artemis I e a Artemis II é que a Artemis I foi uma missão não tripulada, enquanto a Artemis II foi uma missão tripulada [Trecho 1, Ep: NerdCast 1026, 30:26] e [Trecho 2, Ep: NerdCast 1026, 43:42]. Além disso, a Artemis I teve alguns problemas com o escudo de reentrada, que foram ajustados para a missão Artemis II [Trecho 1, Ep: NerdCast 1026, 30:26]. Ambas as missões foram de testes [Trecho 2, Ep: NerdCast 1026, 43:42].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "30:26",
+        "similarity": 0.536
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "43:42",
+        "similarity": 0.502
+      }
+    ],
+    "chunks_used": 2,
+    "elapsed_seconds": 6.94,
+    "tokens_used": 1456,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve distinguir corretamente as duas missões"
+  },
+  {
+    "id": "C02",
+    "type": "comparativa",
+    "query": "Como o NerdCast compara exploração espacial com outros temas de ciência?",
+    "answer": "O NerdCast compara a exploração espacial com outros temas de ciência de forma interdisciplinar, mencionando como a tecnologia empregada na corrida espacial pode servir para muitas outras coisas [Trecho 5, Ep: NerdCast 788, 74:46]. Além disso, eles discutem a evolução espacial e como ela está relacionada a outros campos, como a física, mencionando a velocidade de escape e a resistência do ar [Trecho 4, Ep: NerdCast 777, 117:43]. No entanto, não há uma comparação direta com outros temas de ciência nos trechos fornecidos.",
+    "sources": [
+      {
+        "episode_title": "NerdCast 835 - O Espaço Disputado!",
+        "time": "00:00",
+        "similarity": 0.661
+      },
+      {
+        "episode_title": "NerdCast 976 - O Sul do Estados Unidos: do Blues ao Jambalaya",
+        "time": "00:00",
+        "similarity": 0.648
+      },
+      {
+        "episode_title": "NerdCast 835 - O Espaço Disputado!",
+        "time": "93:25",
+        "similarity": 0.643
+      },
+      {
+        "episode_title": "NerdCast 777 - Invencível, profundo, tosco e surpreendente",
+        "time": "117:43",
+        "similarity": 0.63
+      },
+      {
+        "episode_title": "NerdCast 788 - Qual é a pauta? Pelos desagradáveis, Rolex e p!r0c4 espacial!",
+        "time": "74:46",
+        "similarity": 0.629
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 11.45,
+    "tokens_used": 2355,
+    "expected_episodes": [
+      "multiple"
+    ],
+    "notes": "Teste de cross-episode — deve buscar em múltiplos episódios"
+  },
+  {
+    "id": "R01",
+    "type": "resumo",
+    "query": "Sobre o que foi o episódio do NerdCast sobre Artemis II?",
+    "answer": "Não encontrei essa informação nos episódios disponíveis.",
+    "sources": [
+      {
+        "episode_title": "NerdCast 870 - Homem-Formiga 3: Contando buracos no reino quântico",
+        "time": "75:35",
+        "similarity": 0.649
+      },
+      {
+        "episode_title": "NerdCast 1019 - O Cavaleiro dos Sete Reinos (Ou Seriam Nove?)",
+        "time": "00:00",
+        "similarity": 0.629
+      },
+      {
+        "episode_title": "NerdCast 903 - Ahsoka e… …contemplação",
+        "time": "16:49",
+        "similarity": 0.628
+      },
+      {
+        "episode_title": "NerdCast 929 - Fallout: apocalipse em um grande balde de diversão",
+        "time": "11:15",
+        "similarity": 0.627
+      },
+      {
+        "episode_title": "NerdCast 841 - Stranger Things 4 (parte 2): O Upside Hawkins",
+        "time": "00:00",
+        "similarity": 0.617
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 9.6,
+    "tokens_used": 2803,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve sintetizar os principais pontos do episódio"
+  },
+  {
+    "id": "R02",
+    "type": "resumo",
+    "query": "Quais temas de tecnologia o NerdCast já discutiu?",
+    "answer": "O NerdCast discutiu temas de tecnologia como óculos de realidade virtual, especificamente o Apple Vision Pro [Trecho 1, Ep: NerdCast 889, 01:46], e também sobre a história da Disney e os Imagineers, abordando a mistura de arte, design, tecnologia e UX [Trecho 3, Ep: NerdCast 711, 01:50]. Além disso, o NerdCast também mencionou a parceria com a Alura, uma escola online de tecnologia, que oferece cursos sobre diversas áreas da tecnologia [Trecho 1, Ep: NerdCast 889, 01:46] e [Trecho 3, Ep: NerdCast 711, 01:50].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 889 - Indiana Jones e os caçadores da nostalgia perdida",
+        "time": "01:46",
+        "similarity": 0.698
+      },
+      {
+        "episode_title": "NerdCast 773 - Gosto não se discute",
+        "time": "08:18",
+        "similarity": 0.696
+      },
+      {
+        "episode_title": "NerdCast 711 - Os Reflexos da Revolução Iraniana",
+        "time": "01:50",
+        "similarity": 0.685
+      },
+      {
+        "episode_title": "NerdCast Extra Spotify Podcast Festival  - Ao vivo no Spotify Podcast Festival",
+        "time": "11:47",
+        "similarity": 0.682
+      },
+      {
+        "episode_title": "NerdCast 695 - Coringa, o Joker, o Palhaço",
+        "time": "05:27",
+        "similarity": 0.681
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 15.32,
+    "tokens_used": 3017,
+    "expected_episodes": [
+      "multiple"
+    ],
+    "notes": "Deve agregar temas de múltiplos episódios"
+  },
+  {
+    "id": "CA01",
+    "type": "causal",
+    "query": "Por que a missão Artemis II foi considerada histórica?",
+    "answer": "A missão Artemis II foi considerada histórica porque ela está batendo um recorde de distância já alcançada por seres humanos em relação à Terra e está passando pelo lado oculto da Lua [Trecho 2, Ep: NerdCast 1026, 10:09]. Além disso, a missão Artemis II também é significativa porque ela é uma continuação da missão Artemis I, que foi uma missão de testes não tripulada, e agora está sendo realizada com seres humanos a bordo, o que permite uma experiência humana única e emocionante [Trecho 1, Ep: NerdCast 1026, 30:26].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "30:26",
+        "similarity": 0.569
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "10:09",
+        "similarity": 0.554
+      },
+      {
+        "episode_title": "NerdCast 790 - Egiptologia: Tutancamon, Napoleão e Durepox arqueológico",
+        "time": "50:52",
+        "similarity": 0.537
+      },
+      {
+        "episode_title": "NerdCast 844 - O poder de Roma",
+        "time": "100:23",
+        "similarity": 0.529
+      },
+      {
+        "episode_title": "NerdCast 1003 - A Triste e Sangrenta Guerra do Paraguai",
+        "time": "85:21",
+        "similarity": 0.526
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 19.04,
+    "tokens_used": 2868,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve explicar o impacto histórico baseado nos trechos"
+  },
+  {
+    "id": "CA02",
+    "type": "causal",
+    "query": "Por que é difícil voltar à Lua depois da Apollo?",
+    "answer": "A dificuldade em voltar à Lua após a missão Apollo é mencionada implicitamente nos trechos fornecidos, especialmente quando se discute as complexidades da órbita halo e a necessidade de manobras precisas para entrar em órbita lunar [Trecho 1, Ep: NerdCast 1026, 67:40]. Além disso, a capacidade de manobra da espaçonave Orion é destacada como um limite operacional para realizar certas manobras [Trecho 1, Ep: NerdCast 1026, 67:40].\n\nNo entanto, não há uma resposta direta nos trechos fornecidos sobre por que é difícil voltar à Lua depois da Apollo. As discussões nos trechos se concentram mais nas missões atuais e futuras, como a Artemis II e a utilização de landers privados, do que nas razões específicas pelas quais a volta à Lua é desafiadora [Trecho 2, Ep: NerdCast 1026, 68:53] [Trecho 3, Ep: NerdCast 1026, 79:00].\n\nPortanto, com base nos trechos disponíveis, não é possível fornecer uma resposta detalhada sobre as dificuldades específicas de voltar à Lua após a Apollo. As informações fornecidas se concentram mais em aspectos técnicos e operacionais das missões espaciais atuais e futuras.",
+    "sources": [
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "67:40",
+        "similarity": 0.708
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "68:53",
+        "similarity": 0.702
+      },
+      {
+        "episode_title": "NerdCast 1026 - Artemis II: A Nova Era da Humanidade na Lua",
+        "time": "79:00",
+        "similarity": 0.68
+      },
+      {
+        "episode_title": "NerdCast 812 - Política Internacional 2021",
+        "time": "83:52",
+        "similarity": 0.668
+      },
+      {
+        "episode_title": "NerdCast 835 - O Espaço Disputado!",
+        "time": "101:48",
+        "similarity": 0.664
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 10.75,
+    "tokens_used": 3153,
+    "expected_episodes": [
+      "NerdCast 1026"
+    ],
+    "notes": "Deve identificar as razões discutidas no podcast"
+  },
+  {
+    "id": "N01",
+    "type": "negativa",
+    "query": "O que o NerdCast falou sobre criptomoedas e blockchain?",
+    "answer": "O NerdCast mencionou as criptomoedas e o blockchain em alguns episódios. No Trecho 1, Episódio NerdCast 768, 05:11, foi mencionado que as criptomoedas estão novamente causando notícias e discussões, com a Bitcoin batendo o recorde de valor após quase 4 anos. Além disso, foi citada a compra de 1,5 bilhão de dólares em Bitcoins pela Tesla e outras instituições financeiras.\n\nNo Trecho 2, Episódio NerdCast 776, 04:31, foi discutido o potencial das tecnologias de blockchain e se elas vão encontrar uma forma de popularização ou sumir na obscuridade. Também foi mencionado o exemplo do Nyan Cat, um gatinho do arco-íris, e como ele pode ter valor em criptomoedas.\n\nNo Trecho 4, Episódio NerdCast Oferecido por Zapsign, 52:08, foi mencionado o viés de confirmação em relação às ideias de negócios que envolvem tecnologias como inteligência artificial e blockchain. Foi dito que as pessoas tendem a selecionar as coisas que vêem no mundo para confirmar suas ideias.\n\nPortanto, o NerdCast abordou as criptomoedas e o blockchain em diferentes contextos, desde a discussão sobre o valor da Bitcoin até a especulação sobre o potencial das tecnologias de blockchain e o viés de confirmação em relação às ideias de negócios que as envolvem [Trecho 1, Ep: NerdCast 768, 05:11], [Trecho 2, Ep: NerdCast 776, 04:31], [Trecho 4, Ep: NerdCast Oferecido por Zapsign, 52:08].",
+    "sources": [
+      {
+        "episode_title": "NerdCast 768 - WandaVision: Nostalgia, teorias e luto",
+        "time": "05:11",
+        "similarity": 0.693
+      },
+      {
+        "episode_title": "NerdCast 776 - Piratas no Brasil",
+        "time": "04:31",
+        "similarity": 0.692
+      },
+      {
+        "episode_title": "NerdCast 720 - Não vale usar Google!",
+        "time": "03:46",
+        "similarity": 0.601
+      },
+      {
+        "episode_title": "NerdCast Oferecido por Zapsign - Criando produtos e assinaturas digitais",
+        "time": "52:08",
+        "similarity": 0.586
+      },
+      {
+        "episode_title": "NerdCast 999 - Brilho Eterno de um NerdCast com Lembranças",
+        "time": "50:15",
+        "similarity": 0.575
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 16.28,
+    "tokens_used": 3173,
+    "expected_episodes": [],
+    "notes": "Deve admitir que não tem informação suficiente — não inventar"
+  },
+  {
+    "id": "N02",
+    "type": "negativa",
+    "query": "Qual foi a opinião do NerdCast sobre o último jogo da Copa do Mundo?",
+    "answer": "Não encontrei essa informação nos episódios disponíveis.",
+    "sources": [
+      {
+        "episode_title": "NerdCast 699 - UM BILHÃO DE DOWNLOADS",
+        "time": "23:08",
+        "similarity": 0.635
+      },
+      {
+        "episode_title": "NerdCast 877 - Super Mario Bros: Isso é cinema! A maldição está em outro castelo!",
+        "time": "24:57",
+        "similarity": 0.635
+      },
+      {
+        "episode_title": "NerdCast 1006 - Como Era Bom o Cinema dos Anos 90 - Parte 2",
+        "time": "12:03",
+        "similarity": 0.631
+      },
+      {
+        "episode_title": "NerdCast 863 - Pelé será eterno",
+        "time": "129:51",
+        "similarity": 0.627
+      },
+      {
+        "episode_title": "NerdCast 866 - A nostalgia pelos olhos da ciência",
+        "time": "11:38",
+        "similarity": 0.62
+      }
+    ],
+    "chunks_used": 5,
+    "elapsed_seconds": 14.95,
+    "tokens_used": 2725,
+    "expected_episodes": [],
+    "notes": "Deve admitir ausência de informação nos trechos disponíveis"
+  }
+]

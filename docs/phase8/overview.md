@@ -63,6 +63,21 @@ queries:
   worth the additional computational cost
 - Test should use real user queries collected from the Phase 7 interface
 
+### 7. RAG Quality Improvements
+
+Based on Phase 6 evaluation findings:
+
+- **Named Entity Queries**: improve retrieval for person name searches
+  by boosting chunks containing exact name matches
+- **Metadata Queries**: add episode summary to RAGChunk metadata
+  to handle "what was the episode about" type queries
+- **Query Classification**: route abstract vs specific queries
+  differently (abstract → broader search, specific → tighter filter)
+- **Re-ranking**: implement cross-encoder re-ranking for top-20 chunks
+  before selecting top-5 for the LLM
+- **RAGAS Evaluation**: automated faithfulness and relevance scoring
+  for regression testing
+
 ## Database Schema
 
 The schema for this phase is already in place (Speaker and SpeakerEmbedding
