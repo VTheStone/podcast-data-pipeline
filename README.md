@@ -34,9 +34,9 @@ graph LR
 | 3. Diarization & Enrollment | ✅ Complete | pyannote 4.0 + speaker identification + alignment |
 | 4. Chunking | ✅ Complete | Recursive chunking, 500 tokens, tiktoken |
 | 5. Vector Indexing | ✅ Complete | ChromaDB, mpnet-base-v2, 768 dims |
-| 6. RAG + LLM | ⏳ Planned | Ollama + llama3 |
+| 6. RAG + LLM | ✅ Complete | Groq + llama-3.3-70b, evaluation suite |
 | 7. Query Interface | ⏳ Planned | Streamlit UI for end users (MVP delivery) |
-| 8. Identification Optimization | ⏳ Planned | Diarization fine-tuning + enrollment refinement + cross-episode consolidation |
+| 8. Identification Optimization | ⏳ Planned | Diarization + RAG quality + infrastructure migration |
 
 ## Getting Started
 
@@ -72,3 +72,25 @@ Project developed with focus on:
 - Data Engineering (pipelines, idempotency, orchestration)
 - MLOps (ASR, embeddings, RAG)
 - Best practices (versioning, documentation, testing)
+
+## Usage Example
+
+After indexing episodes, query the corpus interactively:
+
+```bash
+python -m src.rag.pipeline
+```
+
+Sample interaction:
+
+```
+Pergunta: Quais astronautas participaram da Artemis II?
+
+📝 Resposta:
+Os astronautas que participaram da missão Artemis II são: Jeremy,
+Victor Glover, Cristina e Reed Wiseman [Trecho 1, Ep: NerdCast 1026, 46:28].
+
+📚 Fontes (5 trechos):
+  - NerdCast 1026 - Artemis II [46:28] (sim: 0.663)
+  ...
+```
