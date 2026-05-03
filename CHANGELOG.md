@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0] - 2026-05-02
+
+### Added
+- Streamlit web interface for end users
+- Chat-like conversation flow with history
+- Clickable example queries for discoverability
+- Sidebar with session metrics (questions, tokens, time)
+- Color-coded similarity indicators on sources
+- Expandable source cards with chunk text
+- "Nova conversa" button to reset session
+- Manual test checklist for UX validation
+
+### Documentation
+- Final report for Phase 7
+- Screenshots of key interface states
+- Updated README with MVP usage instructions
+
 ## [0.6.0] - 2026-05-01
 
 ### Added
