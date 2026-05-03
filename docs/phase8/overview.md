@@ -83,6 +83,34 @@ Based on Phase 6 evaluation findings:
 The schema for this phase is already in place (Speaker and SpeakerEmbedding
 tables) since Phase 3, allowing incremental refinement without migrations.
 
+### 8. Streamlit Interface Enhancements (Phase 7 polish)
+
+After MVP delivery, enhance the user experience:
+
+- Sidebar with runtime configuration (n_chunks, min_similarity)
+- Charts visualizing result quality (similarity distribution)
+- Episode filters for scoped queries
+- Export conversations as Markdown/PDF
+- Multi-page navigation (chat, browse episodes, statistics)
+- Light/dark mode toggle
+
+### 9. Production Deployment
+
+Move from local Streamlit to publicly accessible deployment:
+
+- **Option A**: Streamlit Community Cloud (simple, free)
+  - Trade-off: ChromaDB storage limits, may need Qdrant Cloud
+- **Option B**: Hugging Face Spaces with Docker
+  - Better for ML community visibility
+- **Option C**: Cloud provider (AWS/GCP) with full control
+  - Justifies if scaling beyond demo
+
+Prerequisites for any deployment:
+- Migrate ChromaDB embedded → Qdrant/Weaviate hosted
+- Move SQLite → PostgreSQL (mentioned in section 5)
+- Environment variable management for secrets
+- HTTPS and domain setup
+
 ## Success Criteria
 
 - Hosts (Alexandre Ottoni, Azaghal) correctly identified in 95%+ of their episodes
