@@ -35,6 +35,9 @@ sentence-transformers<5.0
 # LLM (phase 6)
 groq==1.2.0
 
+# Streamlit (phase 7)
+streamlit==1.57.0
+
 # Utilities
 python-dotenv==1.0.1
 loguru==0.7.2
