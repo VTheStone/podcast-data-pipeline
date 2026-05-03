@@ -111,6 +111,37 @@ Prerequisites for any deployment:
 - Environment variable management for secrets
 - HTTPS and domain setup
 
+### 10. Functional Model Review
+
+Address limitations identified during Phase 7 testing:
+
+**Quantitative queries across multiple episodes**
+
+The current architecture retrieves top-K chunks (default 5) before LLM
+synthesis. Queries that require counting or surveying many episodes
+fail because the retrieval window is too narrow:
+
+- "Quantos episódios falam sobre Disney?"
+- "Em quantos episódios o Azaghal apareceu?"
+- "Quais foram todos os episódios de RPG?"
+
+**Proposed improvements:**
+
+- **Adaptive K**: detect quantitative queries via classification and
+  expand retrieval window (e.g., K=50 for counting queries)
+- **Aggregation layer**: pre-compute episode-level metadata (topics,
+  recurring themes, guests) to answer survey questions without scanning
+  all chunks
+- **Two-stage retrieval**:
+  - Stage 1: identify candidate episodes via metadata search
+  - Stage 2: confirm with chunk-level retrieval
+- **Query intent classification**: route different query types to
+  different retrieval strategies (factual, quantitative, summary, etc.)
+
+This is part of the broader Functional Model Review effort — systematic
+identification of query patterns where the current pipeline underperforms,
+and architectural changes to address them.
+
 ## Success Criteria
 
 - Hosts (Alexandre Ottoni, Azaghal) correctly identified in 95%+ of their episodes
