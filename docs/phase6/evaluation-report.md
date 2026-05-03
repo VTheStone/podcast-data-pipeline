@@ -35,28 +35,32 @@
 ## Key Findings
 
 ### Strengths
+
 - Thematic queries work excellently (F02, F03, C01)
 - Honest "I don't know" responses for out-of-scope queries (N02)
 - Cross-episode retrieval works for well-defined topics (F03, N01)
 - Citation format is consistently correct
 
 ### Weaknesses
-- Named entity queries (F01): embeddings don't treat proper names
-  as special entities — "Alexandre Ottoni" matches weak mentions
-  across many episodes instead of the introduction segment
-- Metadata queries (R01): "what was the episode about" has no
-  semantic similarity with episode content
-- Abstract comparative queries (C02): too vague to retrieve
-  precisely
+
+- **Named entity queries (F01):** embeddings don't treat proper names
+  as special entities — "Alexandre Ottoni" matches weak mentions across
+  many episodes instead of the introduction segment
+- **Metadata queries (R01):** "what was the episode about" has no semantic
+  similarity with episode content
+- **Abstract comparative queries (C02):** too vague to retrieve precisely
 
 ## Recommended Improvements
 
 ### Short term (before Phase 7)
+
 - Add episode summary as RAGChunk metadata for metadata queries
 - Tune min_similarity to 0.55 for better context precision
 
-### Phase 8 backlog
+### v2 backlog
+
 - Named entity recognition to boost proper name matches
 - Query classification to route metadata queries differently
 - Re-ranking with cross-encoder for better context precision
 - RAGAS automated evaluation for regression testing
+- Adaptive top-K based on query type (larger K for quantitative queries)
