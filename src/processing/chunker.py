@@ -10,10 +10,7 @@ from sqlalchemy.orm import Session
 from llama_index.core.node_parser import SentenceSplitter
 import tiktoken
 
-from src.ingestion.config import (
-    CHUNK_SIZE,
-    CHUNK_OVERLAP,
-)
+from config import settings
 from src.ingestion.database import (
     Episode,
     Transcription,
@@ -180,9 +177,9 @@ def chunk_episode(engine, episode: Episode) -> int:
     Generates RAG chunks for an episode.
     """
     splitter = SentenceSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        tokenizer=TOKENIZER.encode,
+        chunk_size=settings.CHUNK_SIZE,
+        chunk_overlap=settings.CHUNK_OVERLAP,
+        tokenizer=settings.TOKENIZER.encode,
     )
 
     with Session(engine) as session:

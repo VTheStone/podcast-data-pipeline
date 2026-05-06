@@ -12,12 +12,7 @@ from sqlalchemy.orm import Session
 from sentence_transformers import SentenceTransformer
 import chromadb
 
-from src.ingestion.config import (
-    EMBEDDING_MODEL,
-    CHROMA_DB_PATH,
-    CHROMA_COLLECTION_NAME,
-    DISTANCE_METRIC,
-)
+from config import settings
 from src.ingestion.database import (
     Episode,
     RAGChunk,
@@ -33,8 +28,8 @@ def get_device() -> str:
 def load_embedding_model() -> SentenceTransformer:
     """Loads the embedding model on the best available device."""
     device = get_device()
-    logger.info(f"Loading embedding model: {EMBEDDING_MODEL} on {device}")
-    model = SentenceTransformer(EMBEDDING_MODEL, device=device)
+    logger.info(f"Loading embedding model: {settings.EMBEDDING_MODEL} on {device}")
+    model = SentenceTransformer(settings.EMBEDDING_MODEL, device=device)
     logger.success("Embedding model loaded successfully")
     return model
 
@@ -46,12 +41,12 @@ def get_chroma_collection():
     Returns:
         ChromaDB collection instance.
     """
-    client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
     collection = client.get_or_create_collection(
-        name=CHROMA_COLLECTION_NAME,
-        metadata={"hnsw:space": DISTANCE_METRIC},
+        name=settings.CHROMA_COLLECTION_NAME,
+        metadata={"hnsw:space": settings.DISTANCE_METRIC},
     )
-    logger.info(f"ChromaDB collection ready: {CHROMA_COLLECTION_NAME}")
+    logger.info(f"ChromaDB collection ready: {settings.CHROMA_COLLECTION_NAME}")
     return collection
 
 

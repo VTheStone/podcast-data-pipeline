@@ -10,7 +10,7 @@ from pathlib import Path
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from src.ingestion.config import RSS_URL, PODCAST_NAME, METADATA_DIR
+from config import settings
 from src.ingestion.database import Episode, init_db
 
 
@@ -80,7 +80,7 @@ def save_catalog(episodes: list[dict], output_dir: str) -> Path:
 
     catalog_path = output_path / "catalog.json"
     catalog = {
-        "podcast": PODCAST_NAME,
+        "podcast": settings.PODCAST_NAME,
         "generated_at": datetime.now().isoformat(),
         "total_episodes": len(episodes),
         "episodes": episodes,
@@ -149,13 +149,13 @@ def run():
     engine = init_db()
 
     # Parse feed
-    episodes = parse_feed(RSS_URL)
+    episodes = parse_feed(settings.RSS_URL)
 
     # Validate
     validate_episodes(episodes)
 
     # Save JSON catalog (backup + documentation)
-    save_catalog(episodes, METADATA_DIR)
+    save_catalog(episodes, settings.METADATA_DIR)
 
     # Save to database (source of truth)
     save_to_database(episodes, engine)

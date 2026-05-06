@@ -10,7 +10,7 @@ from tqdm import tqdm
 import requests
 from sqlalchemy.orm import Session
 
-from src.ingestion.config import RAW_AUDIO_DIR
+from config import settings
 from src.ingestion.database import Episode, get_engine
 
 
@@ -139,7 +139,7 @@ def run(batch_size: int = 10, max_episodes: int = None):
     for i, episode in enumerate(episodes, 1):
         logger.info(f"[{i}/{total}] Processing: {episode.title[:60]}")
 
-        success = download_audio(episode, RAW_AUDIO_DIR)
+        success = download_audio(episode, settings.RAW_AUDIO_DIR)
 
         if success:
             update_episode_status(engine, episode.id, downloaded=True)
