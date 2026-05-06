@@ -6,21 +6,7 @@ about the NerdCast podcast.
 
 from loguru import logger
 from groq import Groq
-from src.ingestion.config import (
-    GROQ_API_KEY,
-    LLM_MODEL,
-    LLM_TEMPERATURE,
-    LLM_MAX_TOKENS,
-    RAG_MIN_SIMILARITY,
-    RAG_N_CHUNKS,
-)
-
-from src.ingestion.config import (
-    GROQ_API_KEY,
-    LLM_MODEL,
-    LLM_TEMPERATURE,
-    LLM_MAX_TOKENS,
-)
+from config import settings
 from src.processing.searcher import SemanticSearcher
 from src.rag.prompts import (
     SYSTEM_PROMPT,
@@ -38,14 +24,14 @@ class RAGPipeline:
     def __init__(self):
         logger.info("Initializing RAG pipeline...")
         self.searcher = SemanticSearcher()
-        self.llm = Groq(api_key=GROQ_API_KEY)
+        self.llm = Groq(api_key=settings.GROQ_API_KEY)
         logger.success("RAG pipeline ready")
 
     def answer(
         self,
         query: str,
-        n_chunks: int = RAG_N_CHUNKS,
-        min_similarity: float = RAG_MIN_SIMILARITY,
+        n_chunks: int = settings.RAG_N_CHUNKS,
+        min_similarity: float = settings.RAG_MIN_SIMILARITY,
         episode_id: str = None,
     ) -> dict:
         """
@@ -79,7 +65,7 @@ class RAGPipeline:
                 "answer": build_no_results_response(),
                 "sources": [],
                 "chunks_used": 0,
-                "model": LLM_MODEL,
+                "model": settings.LLM_MODEL,
             }
 
         # Step 2: Build prompt
@@ -88,13 +74,13 @@ class RAGPipeline:
         # Step 3: Generate answer
         logger.info("Generating answer with LLM...")
         response = self.llm.chat.completions.create(
-            model=LLM_MODEL,
+            model=settings.LLM_MODEL,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": settings.SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=LLM_TEMPERATURE,
-            max_tokens=LLM_MAX_TOKENS,
+            temperature=settings.LLM_TEMPERATURE,
+            max_tokens=settings.LLM_MAX_TOKENS,
         )
 
         answer = response.choices[0].message.content
@@ -121,7 +107,7 @@ class RAGPipeline:
             "answer": answer,
             "sources": sources,
             "chunks_used": len(chunks),
-            "model": LLM_MODEL,
+            "model": settings.LLM_MODEL,
             "tokens_used": response.usage.total_tokens,
         }
 
