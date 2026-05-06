@@ -7,10 +7,7 @@ from loguru import logger
 from sqlalchemy.orm import Session
 import chromadb
 
-from src.ingestion.config import (
-    CHROMA_DB_PATH,
-    CHROMA_COLLECTION_NAME,
-)
+from config import settings
 from src.ingestion.database import Episode, RAGChunk, get_engine
 
 
@@ -38,8 +35,8 @@ def validate_coverage(session: Session) -> dict:
 def validate_chroma_collection() -> dict:
     """Validates ChromaDB collection state."""
     try:
-        client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-        collection = client.get_collection(CHROMA_COLLECTION_NAME)
+        client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
+        collection = client.get_collection(settings.CHROMA_COLLECTION_NAME)
         count = collection.count()
 
         # Get sample to validate metadata structure

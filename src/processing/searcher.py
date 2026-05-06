@@ -8,12 +8,7 @@ from loguru import logger
 from sentence_transformers import SentenceTransformer
 import chromadb
 
-from src.ingestion.config import (
-    EMBEDDING_MODEL,
-    CHROMA_DB_PATH,
-    CHROMA_COLLECTION_NAME,
-)
-
+from config import settings
 
 class SemanticSearcher:
     """
@@ -24,11 +19,11 @@ class SemanticSearcher:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Loading embedding model on {self.device}")
-        self.model = SentenceTransformer(EMBEDDING_MODEL, device=self.device)
+        self.model = SentenceTransformer(settings.EMBEDDING_MODEL, device=self.device)
 
-        client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-        self.collection = client.get_collection(CHROMA_COLLECTION_NAME)
-        logger.info(f"Connected to collection: {CHROMA_COLLECTION_NAME}")
+        client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
+        self.collection = client.get_collection(settings.CHROMA_COLLECTION_NAME)
+        logger.info(f"Connected to collection: {settings.CHROMA_COLLECTION_NAME}")
         logger.info(f"Total documents available: {self.collection.count()}")
 
     def search(
