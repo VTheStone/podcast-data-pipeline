@@ -8,7 +8,7 @@ from loguru import logger
 from sqlalchemy.orm import Session
 
 from src.ingestion.database import Episode, get_engine
-from src.ingestion.config import RAW_AUDIO_DIR
+from config import settings
 
 
 def validate_database(session: Session) -> dict:
@@ -178,7 +178,7 @@ def run():
         ).all()
         duration_results = validate_duration(session)
 
-    file_results = validate_audio_files(downloaded_episodes, RAW_AUDIO_DIR)
+    file_results = validate_audio_files(downloaded_episodes, settings.RAW_AUDIO_DIR)
     print_report(db_results, file_results, duration_results)
 
 
