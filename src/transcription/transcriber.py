@@ -10,20 +10,7 @@ from faster_whisper import WhisperModel
 from sqlalchemy.orm import Session
 from src.ingestion.database import Episode, Transcription, TranscriptionSegment, get_engine
 
-from src.ingestion.config import (
-    RAW_AUDIO_DIR,
-    WHISPER_MODEL,
-    WHISPER_LANGUAGE,
-    WHISPER_BEAM_SIZE,
-    WHISPER_INITIAL_PROMPT,
-    WHISPER_VAD_FILTER,
-    WHISPER_NO_SPEECH_THRESHOLD,
-    WHISPER_COMPRESSION_RATIO_THRESHOLD,
-    WHISPER_CONDITION_ON_PREVIOUS_TEXT,
-    DEVICE,
-    COMPUTE_TYPE,
-    WHISPER_CHUNK_LENGTH,
-)
+from config import settings
 from src.ingestion.database import Episode, Transcription, get_engine
 
 
@@ -34,8 +21,8 @@ def load_model() -> WhisperModel:
     Returns:
         Loaded WhisperModel instance.
     """
-    logger.info(f"Loading Whisper model: {WHISPER_MODEL} on {DEVICE} ({COMPUTE_TYPE})")
-    model = WhisperModel(WHISPER_MODEL, device=DEVICE, compute_type=COMPUTE_TYPE)
+    logger.info(f"Loading Whisper model: {settings.WHISPER_MODEL} on {settings.DEVICE} ({settings.COMPUTE_TYPE})")
+    model = WhisperModel(settings.WHISPER_MODEL, device=settings.DEVICE, compute_type=settings.COMPUTE_TYPE)
     logger.success(f"Model loaded successfully")
     return model
 
@@ -53,14 +40,14 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict
     """
     segments_gen, info = model.transcribe(
         str(audio_path),
-        language=WHISPER_LANGUAGE,
-        beam_size=WHISPER_BEAM_SIZE,
-        initial_prompt=WHISPER_INITIAL_PROMPT,
-        vad_filter=WHISPER_VAD_FILTER,
-        no_speech_threshold=WHISPER_NO_SPEECH_THRESHOLD,
-        compression_ratio_threshold=WHISPER_COMPRESSION_RATIO_THRESHOLD,
-        condition_on_previous_text=WHISPER_CONDITION_ON_PREVIOUS_TEXT,
-        chunk_length=WHISPER_CHUNK_LENGTH,  # process in chunks to avoid OOM
+        language=settings.WHISPER_LANGUAGE,
+        beam_size=settings.WHISPER_BEAM_SIZE,
+        initial_prompt=settings.WHISPER_INITIAL_PROMPT,
+        vad_filter=settings.WHISPER_VAD_FILTER,
+        no_speech_threshold=settings.WHISPER_NO_SPEECH_THRESHOLD,
+        compression_ratio_threshold=settings.WHISPER_COMPRESSION_RATIO_THRESHOLD,
+        condition_on_previous_text=settings.WHISPER_CONDITION_ON_PREVIOUS_TEXT,
+        chunk_length=settings.WHISPER_CHUNK_LENGTH,  # process in chunks to avoid OOM
     )
 
     logger.info(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
@@ -123,8 +110,8 @@ def save_transcription(
         transcription = Transcription(
             episode_id=episode.id,
             full_text=full_text,
-            language=WHISPER_LANGUAGE,
-            model_used=WHISPER_MODEL,
+            language=settings.WHISPER_LANGUAGE,
+            model_used=settings.WHISPER_MODEL,
             **metrics,
         )
         session.add(transcription)
@@ -253,7 +240,7 @@ def run(max_episodes: int = None):
     for i, episode in enumerate(episodes, 1):
         logger.info(f"[{i}/{total}] Transcribing: {episode.title[:60]}")
 
-        audio_path = get_audio_path(episode, RAW_AUDIO_DIR)
+        audio_path = get_audio_path(episode, settings.RAW_AUDIO_DIR)
         if not audio_path:
             failed_count += 1
             failed_episodes.append(episode.title)

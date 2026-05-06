@@ -15,14 +15,7 @@ from loguru import logger
 from pyannote.audio import Pipeline
 from sqlalchemy.orm import Session
 
-from src.ingestion.config import (
-    RAW_AUDIO_DIR,
-    HF_TOKEN,
-    DIARIZATION_MODEL,
-    DIARIZATION_MIN_SPEAKERS,
-    DIARIZATION_MAX_SPEAKERS,
-    DEVICE,
-)
+from config import settings
 from src.ingestion.database import Episode, Chunk, Transcription, get_engine
 
 
@@ -36,10 +29,10 @@ def load_pipeline(device: str) -> Pipeline:
     Returns:
         Loaded pyannote Pipeline instance.
     """
-    logger.info(f"Loading pyannote pipeline: {DIARIZATION_MODEL} on {device}")
+    logger.info(f"Loading pyannote pipeline: {settings.DIARIZATION_MODEL} on {device}")
     pipeline = Pipeline.from_pretrained(
-        DIARIZATION_MODEL,
-        token=HF_TOKEN,
+        settings.DIARIZATION_MODEL,
+        token=settings.HF_TOKEN,
     )
     pipeline.to(torch.device(device))
     logger.success("Pipeline loaded successfully")
@@ -77,8 +70,8 @@ def diarize_episode(pipeline: Pipeline, audio_path: Path) -> tuple[list[dict], n
 
     diarization = pipeline(
         audio_input,
-        min_speakers=DIARIZATION_MIN_SPEAKERS,
-        max_speakers=DIARIZATION_MAX_SPEAKERS,
+        min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
+        max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
     )
 
     annotation = diarization.speaker_diarization
@@ -207,7 +200,7 @@ def run(
         return
 
     # Load pipeline once for all episodes
-    pipeline = load_pipeline(DEVICE)
+    pipeline = load_pipeline(settings.DEVICE)
 
     success_count = 0
     failed_count = 0
@@ -216,7 +209,7 @@ def run(
     for i, episode in enumerate(episodes, 1):
         logger.info(f"[{i}/{total}] Diarizing: {episode.title[:60]}")
 
-        audio_path = get_audio_path(episode, RAW_AUDIO_DIR)
+        audio_path = get_audio_path(episode, settings.RAW_AUDIO_DIR)
         if not audio_path:
             failed_count += 1
             failed_episodes.append(episode.title)
