@@ -10,6 +10,11 @@ import json
 import numpy as np
 from loguru import logger
 from sqlalchemy.orm import Session
+from config import settings
+from src.transcription.intro_patterns import INTRODUCTION_PATTERNS
+
+# KNOWN_HOSTS now comes from the active podcast profile
+KNOWN_HOSTS = settings.KNOWN_HOSTS
 
 from src.ingestion.database import (
     Episode,
@@ -20,24 +25,6 @@ from src.ingestion.database import (
     SpeakerEmbedding,
     get_engine,
 )
-
-
-# Known hosts for NerdCast
-KNOWN_HOSTS = {
-    "alexandre ottoni": "Alexandre Ottoni",
-    "alottoni": "Alexandre Ottoni",
-    "azaghal": "Azaghal",
-    "zagal": "Azaghal",
-    "deive pazos": "Azaghal",
-}
-
-# Patterns to detect self-introduction phrases
-INTRODUCTION_PATTERNS = [
-    r"aqui [eé] [oa]?\s*([\w][\w\s]{2,30}?)(?:\s*,|\s+e\s|\s+do\s|\s+da\s|\s+de\s|$)",
-    r"eu sou [oa]?\s*([\w][\w\s]{2,30}?)(?:\s*,|\s+e\s|\s+do\s|\s+da\s|\s+de\s|$)",
-    r"aqui quem vos fala [eé] [oa]?\s*([\w][\w\s]{2,30}?)(?:\s*,|\s+e\s|\s+do\s|\s+da\s|\s+de\s|$)",
-]
-
 
 def find_speaker_for_segment(
     segment_start: float,
@@ -108,13 +95,6 @@ def extract_name_from_text(text: str) -> str | None:
         # Word boundary check to avoid false positives
         if re.search(rf"\b{re.escape(alias)}\b", text_lower):
             return real_name
-
-    # Patterns capture name until comma, "e ", or preposition
-    INTRODUCTION_PATTERNS = [
-        r"aqui [eé] [oa] ([^,]+?)(?:,|\s+e\s|$)",
-        r"eu sou [oa]? ?([^,]+?)(?:,|\s+e\s|$)",
-        r"aqui quem vos fala [eé] [oa] ([^,]+?)(?:,|\s+e\s|$)",
-    ]
 
     for pattern in INTRODUCTION_PATTERNS:
         match = re.search(pattern, text_lower)
