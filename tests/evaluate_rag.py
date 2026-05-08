@@ -10,7 +10,13 @@ from pathlib import Path
 from loguru import logger
 
 from src.rag.pipeline import RAGPipeline
-from tests.rag_evaluation_queries import EVALUATION_QUERIES
+from config import settings
+import importlib
+
+queries_module = importlib.import_module(
+    f"tests.evaluation.{settings.PODCAST_NAME}_queries"
+)
+EVALUATION_QUERIES = queries_module.EVALUATION_QUERIES
 
 
 def run_evaluation():
