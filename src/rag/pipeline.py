@@ -76,7 +76,7 @@ class RAGPipeline:
         response = self.llm.chat.completions.create(
             model=settings.LLM_MODEL,
             messages=[
-                {"role": "system", "content": settings.SYSTEM_PROMPT},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
             temperature=settings.LLM_TEMPERATURE,
