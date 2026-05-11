@@ -80,6 +80,8 @@ graph TB
 
 Data flows through three storage layers, each with a specific purpose:
 
+```
+
 ┌────────────────────────────────────────────────────────────┐
 │  Filesystem                                                 │
 │  data/raw/.mp3                  ← downloaded audio        │
@@ -99,6 +101,8 @@ Data flows through three storage layers, each with a specific purpose:
 │  ChromaDB (search index)                                    │
 │  podcast_chunks collection       ← embeddings + metadata   │
 └────────────────────────────────────────────────────────────┘
+
+```
 
 A user query traverses these layers in reverse:
 
@@ -167,8 +171,12 @@ The phases form a directed acyclic graph (DAG) with two types of edges:
 
 ### Sequential dependencies (data flow)
 
+```
+
 Phase 1 (Download) → Phase 2 (Transcribe) → Phase 4 (Chunk) → Phase 5 (Index)
 → Phase 3 (Diarize) ────┘
+
+```
 
 A phase cannot start without its predecessors completing for the given
 episode. Phase 4 needs both transcription text and diarization
@@ -176,10 +184,14 @@ boundaries, so it waits for both Phases 2 and 3.
 
 ### Hardware contention (GPU)
 
+```
+
 Phase 2 (Whisper)      ─┐
 Phase 3 (pyannote)      ├─ All require GPU, cannot run simultaneously
 Phase 5 (embeddings)   ─┘
 Phase 4 (chunking)        Pure CPU, can run in parallel with any GPU phase
+
+```
 
 The GPU has 4GB VRAM, which fits one model at a time. Running multiple
 GPU phases concurrently causes OOM. The pipeline orchestration
@@ -202,6 +214,8 @@ Step 5: Phase 6 + 7 (on-demand per query, GPU + network)
 
 The system uses a three-tier configuration model:
 
+```
+
 ┌──────────────────────────────────────────────────────────┐
 │  Layer 1: config/default.py                              │
 │  Generic, podcast-agnostic settings                       │
@@ -223,6 +237,8 @@ The system uses a three-tier configuration model:
 │  - src/ui/translations/{lang}.py                          │
 │  - src/transcription/intro_patterns/{lang}.py             │
 └──────────────────────────────────────────────────────────┘
+
+```
 
 ### How it works at runtime
 
