@@ -10,7 +10,7 @@
 ![Groq](https://img.shields.io/badge/LLM-Llama_3.3_70B-purple)
 ![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B)
 
-![Demo](docs/assets/demo.gif)
+![Demo](docs/assets/podcast_pipeline_demo.gif)
 
 ---
 
@@ -268,6 +268,8 @@ Project developed as a portfolio piece demonstrating:
 
 ## Project Layout
 
+```
+
 podcast-data-pipeline/
 ├── config/                  # Configuration profiles
 │   ├── default.py           # Generic settings
@@ -296,7 +298,9 @@ podcast-data-pipeline/
 │   └── ui/                  # Phase 7
 │       └── translations/    # Language-specific UI strings
 └── tests/
-└── evaluation/          # Per-podcast evaluation suites
+    └── evaluation/          # Per-podcast evaluation suites
+
+```
 
 ---
 
