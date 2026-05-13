@@ -35,3 +35,4 @@ data/chroma_db/
 
 # Generated catalogs
 data/metadata/catalog.json
+logs/
