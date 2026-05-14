@@ -76,6 +76,20 @@ Manual validation on test episode (NerdCast 1026):
 - 2 hosts were misclassified due to diarization grouping artifacts
 - Phase 8 backlog includes per-episode diarization tuning to address this
 
+## Architecture: Single-Pass vs Chunked Diarization
+
+The pipeline supports two diarization modes selected automatically based
+on episode length:
+
+| Mode | When | VRAM Use | Quality |
+|---|---|---|---|
+| Single-pass | Episodes < 90 min | Higher peak | Best (unified embeddings) |
+| Temporal chunking | Episodes ≥ 90 min | Bounded by chunk size | Good (re-identification) |
+
+The threshold and chunk parameters are configurable. See
+[subpipeline-diarization.md](./subpipeline-diarization.md) for details
+on the chunking strategy and speaker re-identification.
+
 ## Configuration
 
 | Parameter | Default | Where to configure |
@@ -96,10 +110,9 @@ podcast.
   background music
 - **OOV proper nouns:** Names not in the known hosts dictionary may not be
   extracted correctly by the regex patterns
-- **Phase 8 improvements planned:**
-  - Per-episode diarization parameter tuning
-  - Cross-episode speaker consolidation via embedding similarity
-  - Progressive enrollment refinement
+- **Re-identification edge cases:** For very long episodes processed with
+  chunking, speakers appearing briefly in only one chunk may not be
+  reliably re-identified if their embedding is noisy
 
 ## Language Considerations
 
