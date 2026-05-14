@@ -49,20 +49,45 @@ The following must be customized in `config/podcasts/{name}.py`:
 
 ```python
 # Maximum speakers expected per episode
-MAX_SPEAKERS_PER_EPISODE = 8  # NerdCast rarely exceeds 6
+MAX_SPEAKERS_PER_EPISODE = 8
 
 # Known hosts dictionary (alias → canonical name)
 KNOWN_HOSTS = {
-    "alexandre ottoni": "Alexandre Ottoni",
-    "alottoni": "Alexandre Ottoni",
-    "azaghal": "Azaghal",
-    "zagal": "Azaghal",
-    "deive pazos": "Azaghal",
+    "host alias": "Host Name",
 }
-
-# Self-introduction patterns (regex by language)
-INTRODUCTION_PATTERNS_LANGUAGE = "pt-BR"  # determines patterns used
 ```
+
+### VRAM Tuning
+
+The default `embedding_batch_size` in pyannote 4.x is 32. On 4GB VRAM
+hardware, this causes out-of-memory errors. The project defaults to:
+
+```python
+DIARIZATION_EMBEDDING_BATCH_SIZE = 8
+```
+
+Adjust per hardware:
+- 4GB VRAM: 8 (current default)
+- 8GB VRAM: 16
+- 12GB+ VRAM: 32 (pyannote default)
+
+### Long Episode Handling
+
+For episodes longer than 90 minutes, even reduced batch size may exhaust
+VRAM during the final embedding aggregation phase. The pipeline
+automatically applies temporal chunking with speaker re-identification.
+
+Tuning parameters in `config/default.py`:
+
+```python
+LONG_EPISODE_THRESHOLD_SECONDS = 5400   # When to enable chunking (90 min)
+CHUNK_DURATION_SECONDS = 1800           # Size of each chunk (30 min)
+CHUNK_OVERLAP_SECONDS = 30              # Overlap between chunks
+REID_SIMILARITY_THRESHOLD = 0.75        # Speaker matching threshold
+```
+
+Lower the threshold to enable chunking on shorter episodes if your
+hardware has less VRAM. Larger chunks process faster but use more VRAM.
 
 ## Validation
 
