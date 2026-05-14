@@ -41,9 +41,6 @@ def load_pipeline(device: str) -> Pipeline:
     )
     pipeline.to(torch.device(device))
 
-    # Set embedding batch size as attribute (pyannote 4.x doesn't accept it as kwarg)
-    pipeline.embedding_batch_size = settings.DIARIZATION_EMBEDDING_BATCH_SIZE
-
     logger.success(
         f"Pipeline loaded successfully "
         f"(embedding_batch_size={pipeline.embedding_batch_size})"
@@ -100,8 +97,8 @@ def split_audio_into_chunks(audio_input: dict) -> list[dict]:
     """
     Splits an audio waveform into overlapping temporal chunks.
 
-    Each chunk is a dict with the same structure as the input, plus
-    'start_offset' indicating its position in the original audio.
+    Each chunk is created as an independent copy (not a view) so the
+    original waveform can be garbage-collected after splitting.
 
     Args:
         audio_input: Dictionary with waveform tensor and sample_rate.
@@ -122,7 +119,9 @@ def split_audio_into_chunks(audio_input: dict) -> list[dict]:
 
     while start < total_samples:
         end = min(start + chunk_samples, total_samples)
-        chunk_waveform = waveform[:, start:end]
+        # .clone() forces a new tensor copy, not a view
+        # This allows the original waveform to be freed later
+        chunk_waveform = waveform[:, start:end].clone()
 
         chunks.append({
             "waveform": chunk_waveform,
@@ -255,14 +254,17 @@ def _diarize_single_chunk(
         "sample_rate": chunk_input["sample_rate"],
     }
 
-    diarization = pipeline(
-        audio_for_pipeline,
-        min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
-        max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
-    )
+    # Run diarization
+    with torch.no_grad():
+        diarization = pipeline(
+            audio_for_pipeline,
+            min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
+            max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
+        )
 
     annotation = diarization.speaker_diarization
-    embeddings = diarization.speaker_embeddings
+    # Convert embeddings to CPU numpy immediately to free GPU memory
+    embeddings = np.asarray(diarization.speaker_embeddings)
 
     segments = []
     for turn, _, speaker in annotation.itertracks(yield_label=True):
@@ -275,12 +277,18 @@ def _diarize_single_chunk(
 
     local_speakers = sorted(set(seg["speaker"] for seg in segments))
 
-    return {
+    result = {
         "segments": segments,
         "embeddings": embeddings,
         "local_speakers": local_speakers,
         "start_offset": chunk_input["start_offset"],
     }
+
+    # Explicitly delete the diarization object (holds references to GPU tensors)
+    del diarization
+    del annotation
+
+    return result
 
 
 def diarize_in_chunks(
@@ -291,6 +299,9 @@ def diarize_in_chunks(
     Diarizes a long audio by splitting into temporal chunks and
     re-identifying speakers across chunks.
 
+    Releases each chunk's memory immediately after processing to keep
+    VRAM footprint bounded.
+
     Args:
         pipeline: Loaded pyannote Pipeline instance.
         audio_input: Dict with waveform and sample_rate of the full audio.
@@ -299,18 +310,35 @@ def diarize_in_chunks(
         Tuple of (merged segments with global labels, merged embeddings).
     """
     chunks = split_audio_into_chunks(audio_input)
+    total_chunks = len(chunks)
+
+    # Release the original waveform now that chunks are independent copies
+    del audio_input
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     chunk_results = []
 
-    for i, chunk in enumerate(chunks, 1):
-        logger.info(f"  Diarizing chunk {i}/{len(chunks)} "
-                    f"(offset={chunk['start_offset']:.0f}s)")
+    for i in range(total_chunks):
+        chunk = chunks[i]
+        logger.info(
+            f"  Diarizing chunk {i+1}/{total_chunks} "
+            f"(offset={chunk['start_offset']:.0f}s)"
+        )
 
         result = _diarize_single_chunk(pipeline, chunk)
         chunk_results.append(result)
 
-        # Free VRAM between chunks
+        # Aggressively free this chunk's waveform after processing
+        chunks[i] = None
+        del chunk
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
+    # All chunks processed, release the list shell
+    del chunks
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     return reidentify_speakers_across_chunks(chunk_results)
 
@@ -330,6 +358,10 @@ def diarize_episode(
     Returns:
         Tuple of (segments list, speaker embeddings array).
     """
+    # Clear any leftover GPU memory before starting
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     audio_input = load_audio(audio_path)
     duration = get_audio_duration(audio_input)
 
@@ -345,14 +377,15 @@ def diarize_episode(
             f"Episode duration: {duration:.0f}s. "
             f"Using single-pass diarization."
         )
-        diarization = pipeline(
-            audio_input,
-            min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
-            max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
-        )
+        with torch.no_grad():
+            diarization = pipeline(
+                audio_input,
+                min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
+                max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
+            )
 
         annotation = diarization.speaker_diarization
-        embeddings = diarization.speaker_embeddings
+        embeddings = np.asarray(diarization.speaker_embeddings)
 
         segments = []
         for turn, _, speaker in annotation.itertracks(yield_label=True):
@@ -362,6 +395,9 @@ def diarize_episode(
                 "speaker": speaker,
                 "duration": round(turn.end - turn.start, 2),
             })
+
+        del diarization
+        del annotation
 
     speakers = sorted(set(seg["speaker"] for seg in segments))
     logger.info(f"Detected {len(speakers)} speakers: {speakers}")
