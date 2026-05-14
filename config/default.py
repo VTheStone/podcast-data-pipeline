@@ -69,10 +69,14 @@ DIARIZATION_MIN_SPEAKERS = 2
 SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
 SPEAKER_SIMILARITY_THRESHOLD = 0.85
 
-# Embedding batch size during diarization.
-# Lower values use less VRAM but are slower.
-# Default in pyannote 4.x is 32. Use 8 for 4GB VRAM cards.
-DIARIZATION_EMBEDDING_BATCH_SIZE = 8
+# Long-episode handling via temporal chunking.
+# Episodes longer than the threshold are split into overlapping chunks
+# and processed separately. Speakers are then re-identified across chunks
+# using embedding similarity.
+LONG_EPISODE_THRESHOLD_SECONDS = 5400       # 90 minutes
+CHUNK_DURATION_SECONDS = 1800               # 30 minutes per chunk
+CHUNK_OVERLAP_SECONDS = 30                  # overlap for context continuity
+REID_SIMILARITY_THRESHOLD = 0.75            # cosine similarity to match speakers
 
 # ============================================================================
 # Phase 4: Chunking (technical defaults)
