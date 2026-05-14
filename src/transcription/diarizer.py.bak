@@ -35,10 +35,6 @@ def load_pipeline(device: str) -> Pipeline:
         token=settings.HF_TOKEN,
     )
     pipeline.to(torch.device(device))
-
-    # Set embedding batch size as attribute (pyannote 4.x doesn't accept it as kwarg)
-    pipeline.embedding_batch_size = settings.DIARIZATION_EMBEDDING_BATCH_SIZE
-    
     logger.success("Pipeline loaded successfully")
     return pipeline
 
@@ -225,18 +221,10 @@ def run(
             success_count += 1
             logger.info(f"Progress: {i}/{total} | Success: {success_count} | Failed: {failed_count}")
 
-            # Clear CUDA cache between episodes to prevent fragmentation
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
         except Exception as e:
             logger.error(f"Failed to diarize {episode.title[:60]}: {e}")
             failed_count += 1
             failed_episodes.append(episode.title)
-
-            # Clear cache after failure too
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
 
     # Final report
     logger.info("=== Diarization Summary ===")

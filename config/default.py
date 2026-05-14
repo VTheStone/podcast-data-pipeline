@@ -69,6 +69,10 @@ DIARIZATION_MIN_SPEAKERS = 2
 SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
 SPEAKER_SIMILARITY_THRESHOLD = 0.85
 
+# Embedding batch size during diarization.
+# Lower values use less VRAM but are slower.
+# Default in pyannote 4.x is 32. Use 8 for 4GB VRAM cards.
+DIARIZATION_EMBEDDING_BATCH_SIZE = 8
 
 # ============================================================================
 # Phase 4: Chunking (technical defaults)
