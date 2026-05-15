@@ -18,6 +18,7 @@ from pathlib import Path
 from loguru import logger
 from pyannote.audio import Pipeline
 from sqlalchemy.orm import Session
+import gc
 
 from config import settings
 from src.ingestion.database import Episode, Chunk, Transcription, get_engine
@@ -294,17 +295,19 @@ def _diarize_single_chunk(
 def diarize_in_chunks(
     pipeline: Pipeline,
     audio_input: dict,
+    device: str = "cuda",
 ) -> tuple[list[dict], np.ndarray]:
     """
     Diarizes a long audio by splitting into temporal chunks and
     re-identifying speakers across chunks.
 
-    Releases each chunk's memory immediately after processing to keep
-    VRAM footprint bounded.
+    Periodically reloads the pipeline to prevent VRAM fragmentation
+    that accumulates over many chunks.
 
     Args:
         pipeline: Loaded pyannote Pipeline instance.
         audio_input: Dict with waveform and sample_rate of the full audio.
+        device: Device used by the pipeline (needed for reload).
 
     Returns:
         Tuple of (merged segments with global labels, merged embeddings).
@@ -314,10 +317,12 @@ def diarize_in_chunks(
 
     # Release the original waveform now that chunks are independent copies
     del audio_input
+    gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
     chunk_results = []
+    reload_interval = settings.RELOAD_PIPELINE_EVERY_N_CHUNKS
 
     for i in range(total_chunks):
         chunk = chunks[i]
@@ -326,17 +331,28 @@ def diarize_in_chunks(
             f"(offset={chunk['start_offset']:.0f}s)"
         )
 
+        # Reload pipeline periodically to prevent VRAM fragmentation
+        if reload_interval and i > 0 and i % reload_interval == 0:
+            logger.info(f"  Reloading pipeline to clear VRAM fragmentation")
+            del pipeline
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            pipeline = load_pipeline(device)
+
         result = _diarize_single_chunk(pipeline, chunk)
         chunk_results.append(result)
 
         # Aggressively free this chunk's waveform after processing
         chunks[i] = None
         del chunk
+        gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
     # All chunks processed, release the list shell
     del chunks
+    gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
@@ -371,7 +387,7 @@ def diarize_episode(
             f"(> {settings.LONG_EPISODE_THRESHOLD_SECONDS}s threshold). "
             f"Using temporal chunking."
         )
-        segments, embeddings = diarize_in_chunks(pipeline, audio_input)
+        segments, embeddings = diarize_in_chunks(pipeline, audio_input, device=settings.DEVICE)
     else:
         logger.info(
             f"Episode duration: {duration:.0f}s. "
