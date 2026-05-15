@@ -73,10 +73,16 @@ SPEAKER_SIMILARITY_THRESHOLD = 0.85
 # Episodes longer than the threshold are split into overlapping chunks
 # and processed separately. Speakers are then re-identified across chunks
 # using embedding similarity.
-LONG_EPISODE_THRESHOLD_SECONDS = 5400       # 90 minutes
-CHUNK_DURATION_SECONDS = 1800               # 30 minutes per chunk
+LONG_EPISODE_THRESHOLD_SECONDS = 1800       # 30 minutes
+CHUNK_DURATION_SECONDS = 600                # 10 minutes per chunk
 CHUNK_OVERLAP_SECONDS = 30                  # overlap for context continuity
 REID_SIMILARITY_THRESHOLD = 0.75            # cosine similarity to match speakers
+
+# Reload pyannote pipeline every N chunks to prevent VRAM fragmentation.
+# Pyannote internals retain some allocations even after explicit cleanup,
+# accumulating over many chunks. Reloading forces a full reset.
+# Set to None to disable reloading.
+RELOAD_PIPELINE_EVERY_N_CHUNKS = 4
 
 # ============================================================================
 # Phase 4: Chunking (technical defaults)
