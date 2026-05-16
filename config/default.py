@@ -59,6 +59,18 @@ WHISPER_COMPRESSION_RATIO_THRESHOLD = 3.0
 WHISPER_CONDITION_ON_PREVIOUS_TEXT = False
 WHISPER_CHUNK_LENGTH = 30  # seconds, prevents OOM on long episodes
 
+# Long-episode handling via temporal chunking for transcription.
+# Whisper can process arbitrarily long audio, but very long episodes
+# (>2h) become risky on memory-constrained hardware. Chunking adds
+# resilience: failures only lose one chunk's work, and progress
+# persists between runs.
+LONG_TRANSCRIPTION_THRESHOLD_SECONDS = 7200    # 2 hours
+TRANSCRIPTION_CHUNK_DURATION_SECONDS = 1800    # 30 minutes per chunk
+TRANSCRIPTION_CHUNK_OVERLAP_SECONDS = 5        # short overlap, dropped at merge
+
+# Directory for storing per-chunk JSON files during chunked transcription.
+# Cleaned up after successful merge into the final transcript.
+TEMP_TRANSCRIPTS_DIR = "data/temp_transcripts"
 
 # ============================================================================
 # Phase 3: Diarization (technical defaults)
@@ -74,7 +86,7 @@ SPEAKER_SIMILARITY_THRESHOLD = 0.85
 # and processed separately. Speakers are then re-identified across chunks
 # using embedding similarity.
 LONG_EPISODE_THRESHOLD_SECONDS = 1800       # 30 minutes
-CHUNK_DURATION_SECONDS = 600                # 10 minutes per chunk
+CHUNK_DURATION_SECONDS = 300                # 5 minutes per chunk
 CHUNK_OVERLAP_SECONDS = 30                  # overlap for context continuity
 REID_SIMILARITY_THRESHOLD = 0.75            # cosine similarity to match speakers
 
