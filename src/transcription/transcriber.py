@@ -2,16 +2,28 @@
 Transcription pipeline for podcast episodes.
 Uses faster-whisper with GPU support to transcribe MP3 files.
 Idempotent: skips episodes already transcribed.
+
+For very long episodes (> LONG_TRANSCRIPTION_THRESHOLD_SECONDS), uses
+temporal chunking with per-chunk JSON persistence. This allows resuming
+mid-episode if processing is interrupted.
 """
 
+import json
+import shutil
+import numpy as np
+import soundfile as sf
 from pathlib import Path
 from loguru import logger
 from faster_whisper import WhisperModel
 from sqlalchemy.orm import Session
-from src.ingestion.database import Episode, Transcription, TranscriptionSegment, get_engine
 
 from config import settings
-from src.ingestion.database import Episode, Transcription, get_engine
+from src.ingestion.database import (
+    Episode,
+    Transcription,
+    TranscriptionSegment,
+    get_engine,
+)
 
 
 def load_model() -> WhisperModel:
@@ -26,6 +38,90 @@ def load_model() -> WhisperModel:
     logger.success(f"Model loaded successfully")
     return model
 
+def load_audio_as_array(audio_path: Path) -> tuple[np.ndarray, int]:
+    """
+    Loads audio file as a mono numpy array using soundfile.
+
+    Args:
+        audio_path: Path to MP3 audio file.
+
+    Returns:
+        Tuple of (mono waveform array, sample_rate).
+    """
+    waveform, sample_rate = sf.read(str(audio_path), always_2d=True)
+    # Convert to mono by averaging channels
+    if waveform.shape[1] > 1:
+        mono = waveform.mean(axis=1)
+    else:
+        mono = waveform[:, 0]
+    return mono.astype(np.float32), sample_rate
+
+
+def get_audio_duration(waveform: np.ndarray, sample_rate: int) -> float:
+    """Returns audio duration in seconds."""
+    return len(waveform) / sample_rate
+
+
+def needs_chunking(duration_seconds: float) -> bool:
+    """
+    Determines if an episode is long enough to require temporal chunking.
+
+    Args:
+        duration_seconds: Episode duration in seconds.
+
+    Returns:
+        True if chunking should be applied.
+    """
+    return duration_seconds > settings.LONG_TRANSCRIPTION_THRESHOLD_SECONDS
+
+
+def split_audio_for_transcription(
+    waveform: np.ndarray,
+    sample_rate: int,
+) -> list[dict]:
+    """
+    Splits an audio waveform into overlapping temporal chunks for
+    transcription. Each chunk is an independent numpy array copy.
+
+    Args:
+        waveform: Mono audio array.
+        sample_rate: Audio sample rate in Hz.
+
+    Returns:
+        List of chunk dicts, each with: waveform, sample_rate, start_offset, index.
+    """
+    chunk_samples = int(settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS * sample_rate)
+    overlap_samples = int(settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS * sample_rate)
+    stride = chunk_samples - overlap_samples
+
+    total_samples = len(waveform)
+    chunks = []
+    start = 0
+    index = 0
+
+    while start < total_samples:
+        end = min(start + chunk_samples, total_samples)
+        # .copy() makes the chunk independent so the original can be freed
+        chunk_waveform = waveform[start:end].copy()
+
+        chunks.append({
+            "waveform": chunk_waveform,
+            "sample_rate": sample_rate,
+            "start_offset": start / sample_rate,
+            "index": index,
+        })
+
+        if end == total_samples:
+            break
+        start += stride
+        index += 1
+
+    logger.info(
+        f"Split audio into {len(chunks)} chunks of "
+        f"{settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS}s with "
+        f"{settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS}s overlap"
+    )
+    return chunks
 
 def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
     """
