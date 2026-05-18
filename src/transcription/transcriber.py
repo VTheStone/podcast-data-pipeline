@@ -375,17 +375,48 @@ def transcribe_in_chunks(
 
     return merged_segments, info
 
-def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
+def transcribe_episode(
+    model: WhisperModel,
+    audio_path: Path,
+    episode_id: str | None = None,
+) -> tuple[list[dict], object]:
     """
     Transcribes a single audio file into segments.
+
+    Chooses between single-pass and chunked strategy based on audio duration.
+    For chunked transcription, partial results are persisted to disk for
+    resumability.
 
     Args:
         model: Loaded WhisperModel instance.
         audio_path: Path to the MP3 audio file.
+        episode_id: Episode ID, required for chunked transcription persistence.
 
     Returns:
         Tuple of (segments list, transcription info object).
     """
+    # Probe duration without loading entire file in memory
+    info = sf.info(str(audio_path))
+    duration_seconds = info.frames / info.samplerate
+
+    if needs_chunking(duration_seconds):
+        if episode_id is None:
+            raise ValueError(
+                "episode_id is required for chunked transcription "
+                "(used for partial-results persistence)"
+            )
+        logger.info(
+            f"Episode duration: {duration_seconds:.0f}s "
+            f"(> {settings.LONG_TRANSCRIPTION_THRESHOLD_SECONDS}s threshold). "
+            f"Using chunked transcription."
+        )
+        return transcribe_in_chunks(model, audio_path, episode_id)
+
+    # Single-pass path (original behavior)
+    logger.info(
+        f"Episode duration: {duration_seconds:.0f}s. "
+        f"Using single-pass transcription."
+    )
     segments_gen, info = model.transcribe(
         str(audio_path),
         language=settings.WHISPER_LANGUAGE,
@@ -395,10 +426,13 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict
         no_speech_threshold=settings.WHISPER_NO_SPEECH_THRESHOLD,
         compression_ratio_threshold=settings.WHISPER_COMPRESSION_RATIO_THRESHOLD,
         condition_on_previous_text=settings.WHISPER_CONDITION_ON_PREVIOUS_TEXT,
-        chunk_length=settings.WHISPER_CHUNK_LENGTH,  # process in chunks to avoid OOM
+        chunk_length=settings.WHISPER_CHUNK_LENGTH,
     )
 
-    logger.info(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
+    logger.info(
+        f"Detected language: {info.language} "
+        f"(confidence: {info.language_probability:.2f})"
+    )
 
     results = []
     for segment in segments_gen:
@@ -595,9 +629,10 @@ def run(max_episodes: int = None):
             continue
 
         try:
-            segments, info = transcribe_episode(model, audio_path)
+            segments, info = transcribe_episode(model, audio_path, episode_id=episode.id)
             metrics = calculate_metrics(segments, info, episode)
             save_transcription(engine, episode, segments, metrics)
+            cleanup_temp_chunks(episode.id)
             success_count += 1
             logger.info(f"Progress: {i}/{total} | Success: {success_count} | Failed: {failed_count}")
 
