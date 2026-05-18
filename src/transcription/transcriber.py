@@ -123,6 +123,76 @@ def split_audio_for_transcription(
     )
     return chunks
 
+def get_temp_chunk_dir(episode_id: str) -> Path:
+    """Returns the directory path for an episode's temporary chunk files."""
+    temp_dir = Path(settings.TEMP_TRANSCRIPTS_DIR) / str(episode_id)
+    return temp_dir
+
+
+def save_chunk_result(
+    episode_id: str,
+    chunk_result: dict,
+) -> Path:
+    """
+    Persists a single chunk's transcription result to a JSON file.
+
+    Args:
+        episode_id: Episode ID for organizing temp files.
+        chunk_result: Dict with index, start_offset, segments, language.
+
+    Returns:
+        Path to the saved JSON file.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    chunk_file = temp_dir / f"chunk_{chunk_result['index']:03d}.json"
+    with chunk_file.open("w", encoding="utf-8") as f:
+        json.dump(chunk_result, f, ensure_ascii=False, indent=2)
+
+    return chunk_file
+
+
+def load_existing_chunks(episode_id: str) -> dict[int, dict]:
+    """
+    Loads all previously-saved chunks for an episode.
+
+    Used to resume interrupted transcriptions without redoing work.
+
+    Args:
+        episode_id: Episode ID.
+
+    Returns:
+        Dict mapping chunk index to chunk result data.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    if not temp_dir.exists():
+        return {}
+
+    existing = {}
+    for chunk_file in sorted(temp_dir.glob("chunk_*.json")):
+        try:
+            with chunk_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            existing[data["index"]] = data
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Skipping corrupt chunk file {chunk_file.name}: {e}")
+
+    return existing
+
+
+def cleanup_temp_chunks(episode_id: str) -> None:
+    """
+    Removes the temporary chunks directory after successful final save.
+
+    Args:
+        episode_id: Episode ID.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
+        logger.debug(f"Cleaned up temp chunks at {temp_dir}")
+
 def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
     """
     Transcribes a single audio file into segments.
