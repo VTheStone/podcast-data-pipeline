@@ -193,6 +193,188 @@ def cleanup_temp_chunks(episode_id: str) -> None:
         shutil.rmtree(temp_dir)
         logger.debug(f"Cleaned up temp chunks at {temp_dir}")
 
+def _transcribe_single_chunk(
+    model: WhisperModel,
+    chunk: dict,
+) -> dict:
+    """
+    Transcribes a single audio chunk via faster-whisper.
+
+    Args:
+        model: Loaded WhisperModel instance.
+        chunk: Dict with waveform, sample_rate, start_offset, index.
+
+    Returns:
+        Dict with index, start_offset, segments, language, language_probability.
+    """
+    # faster-whisper accepts numpy arrays directly
+    segments_gen, info = model.transcribe(
+        chunk["waveform"],
+        language=settings.WHISPER_LANGUAGE,
+        beam_size=settings.WHISPER_BEAM_SIZE,
+        initial_prompt=settings.WHISPER_INITIAL_PROMPT,
+        vad_filter=settings.WHISPER_VAD_FILTER,
+        no_speech_threshold=settings.WHISPER_NO_SPEECH_THRESHOLD,
+        compression_ratio_threshold=settings.WHISPER_COMPRESSION_RATIO_THRESHOLD,
+        condition_on_previous_text=settings.WHISPER_CONDITION_ON_PREVIOUS_TEXT,
+        chunk_length=settings.WHISPER_CHUNK_LENGTH,
+    )
+
+    # Materialize segments (faster-whisper returns a generator)
+    segments = []
+    for seg in segments_gen:
+        segments.append({
+            "start": round(seg.start, 2),
+            "end": round(seg.end, 2),
+            "text": seg.text.strip(),
+            "avg_logprob": round(seg.avg_logprob, 4),
+        })
+
+    return {
+        "index": chunk["index"],
+        "start_offset": chunk["start_offset"],
+        "segments": segments,
+        "language": info.language,
+        "language_probability": round(info.language_probability, 4),
+    }
+
+
+def merge_chunk_transcripts(
+    chunk_results: list[dict],
+    overlap_seconds: float,
+) -> list[dict]:
+    """
+    Merges per-chunk transcription results into a single segment list.
+
+    Applies time offsets and drops segments in overlap zones to prevent
+    duplicate content at chunk boundaries.
+
+    Args:
+        chunk_results: List of chunk result dicts (sorted by index).
+        overlap_seconds: Overlap duration between chunks in seconds.
+
+    Returns:
+        List of merged segments with global timestamps.
+    """
+    if not chunk_results:
+        return []
+
+    merged = []
+
+    for i, chunk in enumerate(chunk_results):
+        offset = chunk["start_offset"]
+        is_last_chunk = (i == len(chunk_results) - 1)
+
+        for seg in chunk["segments"]:
+            # Apply time offset
+            global_start = seg["start"] + offset
+            global_end = seg["end"] + offset
+
+            # For all chunks except the last, drop segments that fall
+            # entirely in the overlap zone (the next chunk will cover them)
+            if not is_last_chunk:
+                next_chunk_start = chunk_results[i + 1]["start_offset"]
+                # Skip if segment is entirely past the next chunk's start
+                if global_start >= next_chunk_start:
+                    continue
+
+            merged.append({
+                "start": round(global_start, 2),
+                "end": round(global_end, 2),
+                "text": seg["text"],
+                "avg_logprob": seg["avg_logprob"],
+            })
+
+    # Final sort to ensure chronological order
+    merged.sort(key=lambda s: s["start"])
+
+    logger.info(
+        f"Merged {sum(len(c['segments']) for c in chunk_results)} "
+        f"raw segments into {len(merged)} final segments"
+    )
+    return merged
+
+
+def transcribe_in_chunks(
+    model: WhisperModel,
+    audio_path: Path,
+    episode_id: str,
+) -> tuple[list[dict], object]:
+    """
+    Transcribes a long episode by splitting it into temporal chunks.
+
+    Each chunk is transcribed independently and persisted to disk
+    immediately, allowing the process to resume from where it stopped
+    if interrupted.
+
+    Args:
+        model: Loaded WhisperModel instance.
+        audio_path: Path to MP3 audio file.
+        episode_id: Episode ID for organizing temp files.
+
+    Returns:
+        Tuple of (merged segments list, info-like object for compatibility).
+    """
+    # Load audio in memory
+    waveform, sample_rate = load_audio_as_array(audio_path)
+    duration = get_audio_duration(waveform, sample_rate)
+
+    # Split into chunks
+    chunks = split_audio_for_transcription(waveform, sample_rate)
+    total_chunks = len(chunks)
+
+    # Free the original waveform — each chunk is now an independent copy
+    del waveform
+
+    # Check for existing partial work to resume
+    existing = load_existing_chunks(episode_id)
+    if existing:
+        logger.info(
+            f"Found {len(existing)} previously-saved chunks for this episode. "
+            f"Resuming from chunk {max(existing.keys()) + 1}"
+        )
+
+    # Process each chunk
+    chunk_results = []
+    for chunk in chunks:
+        if chunk["index"] in existing:
+            logger.info(
+                f"  Chunk {chunk['index'] + 1}/{total_chunks} already done, skipping"
+            )
+            chunk_results.append(existing[chunk["index"]])
+            continue
+
+        logger.info(
+            f"  Transcribing chunk {chunk['index'] + 1}/{total_chunks} "
+            f"(offset={chunk['start_offset']:.0f}s)"
+        )
+        result = _transcribe_single_chunk(model, chunk)
+
+        # Persist immediately to disk
+        save_chunk_result(episode_id, result)
+        chunk_results.append(result)
+
+    # Sort by index (in case resumed out of order)
+    chunk_results.sort(key=lambda c: c["index"])
+
+    # Merge into final segment list
+    merged_segments = merge_chunk_transcripts(
+        chunk_results,
+        overlap_seconds=settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS,
+    )
+
+    # Build an info-like object so existing calculate_metrics still works
+    languages = [c["language"] for c in chunk_results]
+    most_common_lang = max(set(languages), key=languages.count)
+    avg_lang_prob = sum(c["language_probability"] for c in chunk_results) / len(chunk_results)
+
+    info = type("ChunkedInfo", (), {
+        "language": most_common_lang,
+        "language_probability": avg_lang_prob,
+    })()
+
+    return merged_segments, info
+
 def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
     """
     Transcribes a single audio file into segments.
