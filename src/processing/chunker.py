@@ -179,7 +179,7 @@ def chunk_episode(engine, episode: Episode) -> int:
     splitter = SentenceSplitter(
         chunk_size=settings.CHUNK_SIZE,
         chunk_overlap=settings.CHUNK_OVERLAP,
-        tokenizer=settings.TOKENIZER.encode,
+        tokenizer=TOKENIZER.encode,
     )
 
     with Session(engine) as session:
