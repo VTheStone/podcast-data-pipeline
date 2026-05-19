@@ -56,13 +56,27 @@ def load_audio_as_array(audio_path: Path) -> tuple[np.ndarray, int]:
         mono = waveform[:, 0]
     return mono.astype(np.float32), sample_rate
 
+def needs_chunking(duration_seconds: float) -> bool:
+    """
+    Determines if an episode is long enough to require temporal chunking.
+
+    Args:
+        duration_seconds: Episode duration in seconds.
+
+    Returns:
+        True if chunking should be applied.
+    """
+    return duration_seconds > settings.LONG_TRANSCRIPTION_THRESHOLD_SECONDS
+
 def stream_audio_chunks(audio_path: Path):
     """
-    Generator that yields audio chunks read directly from the file,
-    without ever loading the full audio into memory.
+    Generator that yields audio chunks by extracting them with ffmpeg.
 
-    Each yielded chunk is a dict with: waveform (numpy mono array),
-    sample_rate, start_offset (seconds), and index.
+    Each chunk is extracted as a temporary WAV file (16-bit PCM, 16kHz mono),
+    converted to numpy, then deleted before yielding the next.
+
+    This approach scales to arbitrarily long audio files since ffmpeg
+    streams the source without loading it fully into memory.
 
     Args:
         audio_path: Path to MP3 audio file.
@@ -70,55 +84,96 @@ def stream_audio_chunks(audio_path: Path):
     Yields:
         Chunk dicts ready for transcription.
     """
-    with sf.SoundFile(str(audio_path)) as f:
-        sample_rate = f.samplerate
-        total_frames = len(f)
-        channels = f.channels
+    import subprocess
+    import tempfile
 
-        chunk_frames = int(settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS * sample_rate)
-        overlap_frames = int(settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS * sample_rate)
-        stride = chunk_frames - overlap_frames
+    # Probe duration via ffprobe (lightweight, doesn't decode anything)
+    probe_cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(audio_path),
+    ]
+    try:
+        result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+        total_duration_s = float(result.stdout.strip())
+    except (subprocess.CalledProcessError, ValueError) as e:
+        logger.error(f"Failed to probe audio duration with ffprobe: {e}")
+        raise
 
-        # Estimate total chunks for logging
-        if total_frames <= chunk_frames:
-            estimated_chunks = 1
-        else:
-            estimated_chunks = ((total_frames - chunk_frames) // stride) + 2
+    chunk_s = settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS
+    overlap_s = settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS
+    stride_s = chunk_s - overlap_s
 
-        logger.info(
-            f"Streaming audio in chunks of "
-            f"{settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS}s with "
-            f"{settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS}s overlap "
-            f"(~{estimated_chunks} chunks expected)"
-        )
+    estimated_chunks = max(1, int((total_duration_s - chunk_s) / stride_s) + 2)
 
-        start = 0
-        index = 0
-        while start < total_frames:
-            f.seek(start)
-            end = min(start + chunk_frames, total_frames)
-            num_frames = end - start
+    logger.info(
+        f"Streaming audio in chunks of {chunk_s}s with {overlap_s}s overlap "
+        f"(~{estimated_chunks} chunks expected, total duration {total_duration_s:.0f}s)"
+    )
 
-            # Read this chunk's frames
-            chunk_data = f.read(num_frames, dtype="float32", always_2d=True)
+    temp_dir = Path(tempfile.gettempdir()) / "podcast_pipeline_chunks"
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-            # Convert to mono
-            if channels > 1:
-                mono = chunk_data.mean(axis=1)
-            else:
-                mono = chunk_data[:, 0]
+    start_s = 0.0
+    index = 0
 
-            yield {
-                "waveform": mono.astype(np.float32),
-                "sample_rate": sample_rate,
-                "start_offset": start / sample_rate,
-                "index": index,
-            }
+    while start_s < total_duration_s:
+        end_s = min(start_s + chunk_s, total_duration_s)
+        duration_s = end_s - start_s
 
-            if end == total_frames:
-                break
-            start += stride
-            index += 1
+        temp_wav = temp_dir / f"chunk_{index:03d}.wav"
+
+        # Extract chunk with ffmpeg
+        # -ac 1: mono
+        # -ar 16000: 16kHz (Whisper's expected sample rate)
+        # -acodec pcm_s16le: 16-bit PCM (standard WAV)
+        # -ss / -t: start and duration
+        # -y: overwrite if exists
+        # -loglevel error: silence ffmpeg output unless error
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",
+            "-loglevel", "error",
+            "-ss", str(start_s),
+            "-t", str(duration_s),
+            "-i", str(audio_path),
+            "-ac", "1",
+            "-ar", "16000",
+            "-acodec", "pcm_s16le",
+            str(temp_wav),
+        ]
+
+        try:
+            subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                f"ffmpeg failed to extract chunk {index} "
+                f"(start={start_s}s, duration={duration_s}s): "
+                f"{e.stderr.decode('utf-8', errors='replace')[:500]}"
+            )
+            raise
+
+        # Read the WAV into memory
+        waveform, sample_rate = sf.read(str(temp_wav), dtype="float32", always_2d=False)
+
+        yield {
+            "waveform": waveform,
+            "sample_rate": sample_rate,
+            "start_offset": start_s,
+            "index": index,
+        }
+
+        # Clean up the temp WAV right after yielding
+        try:
+            temp_wav.unlink()
+        except OSError:
+            pass
+
+        if end_s >= total_duration_s:
+            break
+        start_s += stride_s
+        index += 1
 
 def get_temp_chunk_dir(episode_id: str) -> Path:
     """Returns the directory path for an episode's temporary chunk files."""
