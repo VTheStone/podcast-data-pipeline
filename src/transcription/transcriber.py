@@ -2,16 +2,28 @@
 Transcription pipeline for podcast episodes.
 Uses faster-whisper with GPU support to transcribe MP3 files.
 Idempotent: skips episodes already transcribed.
+
+For very long episodes (> LONG_TRANSCRIPTION_THRESHOLD_SECONDS), uses
+temporal chunking with per-chunk JSON persistence. This allows resuming
+mid-episode if processing is interrupted.
 """
 
+import json
+import shutil
+import numpy as np
+import soundfile as sf
 from pathlib import Path
 from loguru import logger
 from faster_whisper import WhisperModel
 from sqlalchemy.orm import Session
-from src.ingestion.database import Episode, Transcription, TranscriptionSegment, get_engine
 
 from config import settings
-from src.ingestion.database import Episode, Transcription, get_engine
+from src.ingestion.database import (
+    Episode,
+    Transcription,
+    TranscriptionSegment,
+    get_engine,
+)
 
 
 def load_model() -> WhisperModel:
@@ -26,18 +38,436 @@ def load_model() -> WhisperModel:
     logger.success(f"Model loaded successfully")
     return model
 
-
-def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict], object]:
+def load_audio_as_array(audio_path: Path) -> tuple[np.ndarray, int]:
     """
-    Transcribes a single audio file into segments.
+    Loads audio file as a mono numpy array using soundfile.
+
+    Args:
+        audio_path: Path to MP3 audio file.
+
+    Returns:
+        Tuple of (mono waveform array, sample_rate).
+    """
+    waveform, sample_rate = sf.read(str(audio_path), always_2d=True)
+    # Convert to mono by averaging channels
+    if waveform.shape[1] > 1:
+        mono = waveform.mean(axis=1)
+    else:
+        mono = waveform[:, 0]
+    return mono.astype(np.float32), sample_rate
+
+def needs_chunking(duration_seconds: float) -> bool:
+    """
+    Determines if an episode is long enough to require temporal chunking.
+
+    Args:
+        duration_seconds: Episode duration in seconds.
+
+    Returns:
+        True if chunking should be applied.
+    """
+    return duration_seconds > settings.LONG_TRANSCRIPTION_THRESHOLD_SECONDS
+
+def stream_audio_chunks(audio_path: Path):
+    """
+    Generator that yields audio chunks by extracting them with ffmpeg.
+
+    Each chunk is extracted as a temporary WAV file (16-bit PCM, 16kHz mono),
+    converted to numpy, then deleted before yielding the next.
+
+    This approach scales to arbitrarily long audio files since ffmpeg
+    streams the source without loading it fully into memory.
+
+    Args:
+        audio_path: Path to MP3 audio file.
+
+    Yields:
+        Chunk dicts ready for transcription.
+    """
+    import subprocess
+    import tempfile
+
+    # Probe duration via ffprobe (lightweight, doesn't decode anything)
+    probe_cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(audio_path),
+    ]
+    try:
+        result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+        total_duration_s = float(result.stdout.strip())
+    except (subprocess.CalledProcessError, ValueError) as e:
+        logger.error(f"Failed to probe audio duration with ffprobe: {e}")
+        raise
+
+    chunk_s = settings.TRANSCRIPTION_CHUNK_DURATION_SECONDS
+    overlap_s = settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS
+    stride_s = chunk_s - overlap_s
+
+    estimated_chunks = max(1, int((total_duration_s - chunk_s) / stride_s) + 2)
+
+    logger.info(
+        f"Streaming audio in chunks of {chunk_s}s with {overlap_s}s overlap "
+        f"(~{estimated_chunks} chunks expected, total duration {total_duration_s:.0f}s)"
+    )
+
+    temp_dir = Path(tempfile.gettempdir()) / "podcast_pipeline_chunks"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    start_s = 0.0
+    index = 0
+
+    while start_s < total_duration_s:
+        end_s = min(start_s + chunk_s, total_duration_s)
+        duration_s = end_s - start_s
+
+        temp_wav = temp_dir / f"chunk_{index:03d}.wav"
+
+        # Extract chunk with ffmpeg
+        # -ac 1: mono
+        # -ar 16000: 16kHz (Whisper's expected sample rate)
+        # -acodec pcm_s16le: 16-bit PCM (standard WAV)
+        # -ss / -t: start and duration
+        # -y: overwrite if exists
+        # -loglevel error: silence ffmpeg output unless error
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",
+            "-loglevel", "error",
+            "-ss", str(start_s),
+            "-t", str(duration_s),
+            "-i", str(audio_path),
+            "-ac", "1",
+            "-ar", "16000",
+            "-acodec", "pcm_s16le",
+            str(temp_wav),
+        ]
+
+        try:
+            subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                f"ffmpeg failed to extract chunk {index} "
+                f"(start={start_s}s, duration={duration_s}s): "
+                f"{e.stderr.decode('utf-8', errors='replace')[:500]}"
+            )
+            raise
+
+        # Read the WAV into memory
+        waveform, sample_rate = sf.read(str(temp_wav), dtype="float32", always_2d=False)
+
+        yield {
+            "waveform": waveform,
+            "sample_rate": sample_rate,
+            "start_offset": start_s,
+            "index": index,
+        }
+
+        # Clean up the temp WAV right after yielding
+        try:
+            temp_wav.unlink()
+        except OSError:
+            pass
+
+        if end_s >= total_duration_s:
+            break
+        start_s += stride_s
+        index += 1
+
+def get_temp_chunk_dir(episode_id: str) -> Path:
+    """Returns the directory path for an episode's temporary chunk files."""
+    temp_dir = Path(settings.TEMP_TRANSCRIPTS_DIR) / str(episode_id)
+    return temp_dir
+
+
+def save_chunk_result(
+    episode_id: str,
+    chunk_result: dict,
+) -> Path:
+    """
+    Persists a single chunk's transcription result to a JSON file.
+
+    Args:
+        episode_id: Episode ID for organizing temp files.
+        chunk_result: Dict with index, start_offset, segments, language.
+
+    Returns:
+        Path to the saved JSON file.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    chunk_file = temp_dir / f"chunk_{chunk_result['index']:03d}.json"
+    with chunk_file.open("w", encoding="utf-8") as f:
+        json.dump(chunk_result, f, ensure_ascii=False, indent=2)
+
+    return chunk_file
+
+
+def load_existing_chunks(episode_id: str) -> dict[int, dict]:
+    """
+    Loads all previously-saved chunks for an episode.
+
+    Used to resume interrupted transcriptions without redoing work.
+
+    Args:
+        episode_id: Episode ID.
+
+    Returns:
+        Dict mapping chunk index to chunk result data.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    if not temp_dir.exists():
+        return {}
+
+    existing = {}
+    for chunk_file in sorted(temp_dir.glob("chunk_*.json")):
+        try:
+            with chunk_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            existing[data["index"]] = data
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Skipping corrupt chunk file {chunk_file.name}: {e}")
+
+    return existing
+
+
+def cleanup_temp_chunks(episode_id: str) -> None:
+    """
+    Removes the temporary chunks directory after successful final save.
+
+    Args:
+        episode_id: Episode ID.
+    """
+    temp_dir = get_temp_chunk_dir(episode_id)
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
+        logger.debug(f"Cleaned up temp chunks at {temp_dir}")
+
+def _transcribe_single_chunk(
+    model: WhisperModel,
+    chunk: dict,
+) -> dict:
+    """
+    Transcribes a single audio chunk via faster-whisper.
 
     Args:
         model: Loaded WhisperModel instance.
-        audio_path: Path to the MP3 audio file.
+        chunk: Dict with waveform, sample_rate, start_offset, index.
+
+    Returns:
+        Dict with index, start_offset, segments, language, language_probability.
+    """
+    # faster-whisper accepts numpy arrays directly
+    segments_gen, info = model.transcribe(
+        chunk["waveform"],
+        language=settings.WHISPER_LANGUAGE,
+        beam_size=settings.WHISPER_BEAM_SIZE,
+        initial_prompt=settings.WHISPER_INITIAL_PROMPT,
+        vad_filter=settings.WHISPER_VAD_FILTER,
+        no_speech_threshold=settings.WHISPER_NO_SPEECH_THRESHOLD,
+        compression_ratio_threshold=settings.WHISPER_COMPRESSION_RATIO_THRESHOLD,
+        condition_on_previous_text=settings.WHISPER_CONDITION_ON_PREVIOUS_TEXT,
+        chunk_length=settings.WHISPER_CHUNK_LENGTH,
+    )
+
+    # Materialize segments (faster-whisper returns a generator)
+    segments = []
+    for seg in segments_gen:
+        segments.append({
+            "start": round(seg.start, 2),
+            "end": round(seg.end, 2),
+            "text": seg.text.strip(),
+            "avg_logprob": round(seg.avg_logprob, 4),
+        })
+
+    return {
+        "index": chunk["index"],
+        "start_offset": chunk["start_offset"],
+        "segments": segments,
+        "language": info.language,
+        "language_probability": round(info.language_probability, 4),
+    }
+
+
+def merge_chunk_transcripts(
+    chunk_results: list[dict],
+    overlap_seconds: float,
+) -> list[dict]:
+    """
+    Merges per-chunk transcription results into a single segment list.
+
+    Applies time offsets and drops segments in overlap zones to prevent
+    duplicate content at chunk boundaries.
+
+    Args:
+        chunk_results: List of chunk result dicts (sorted by index).
+        overlap_seconds: Overlap duration between chunks in seconds.
+
+    Returns:
+        List of merged segments with global timestamps.
+    """
+    if not chunk_results:
+        return []
+
+    merged = []
+
+    for i, chunk in enumerate(chunk_results):
+        offset = chunk["start_offset"]
+        is_last_chunk = (i == len(chunk_results) - 1)
+
+        for seg in chunk["segments"]:
+            # Apply time offset
+            global_start = seg["start"] + offset
+            global_end = seg["end"] + offset
+
+            # For all chunks except the last, drop segments that fall
+            # entirely in the overlap zone (the next chunk will cover them)
+            if not is_last_chunk:
+                next_chunk_start = chunk_results[i + 1]["start_offset"]
+                # Skip if segment is entirely past the next chunk's start
+                if global_start >= next_chunk_start:
+                    continue
+
+            merged.append({
+                "start": round(global_start, 2),
+                "end": round(global_end, 2),
+                "text": seg["text"],
+                "avg_logprob": seg["avg_logprob"],
+            })
+
+    # Final sort to ensure chronological order
+    merged.sort(key=lambda s: s["start"])
+
+    logger.info(
+        f"Merged {sum(len(c['segments']) for c in chunk_results)} "
+        f"raw segments into {len(merged)} final segments"
+    )
+    return merged
+
+
+def transcribe_in_chunks(
+    model: WhisperModel,
+    audio_path: Path,
+    episode_id: str,
+) -> tuple[list[dict], object]:
+    """
+    Transcribes a long episode by streaming temporal chunks from disk.
+
+    Audio is never loaded into memory in full — each chunk is read on
+    demand. Per-chunk JSON files persist progress for resumability.
+
+    Args:
+        model: Loaded WhisperModel instance.
+        audio_path: Path to MP3 audio file.
+        episode_id: Episode ID for organizing temp files.
+
+    Returns:
+        Tuple of (merged segments list, info-like object).
+    """
+    # Check for existing partial work to resume
+    existing = load_existing_chunks(episode_id)
+    if existing:
+        logger.info(
+            f"Found {len(existing)} previously-saved chunks for this episode. "
+            f"Resuming from chunk {max(existing.keys()) + 1}"
+        )
+
+    chunk_results = []
+
+    # Stream chunks one at a time
+    for chunk in stream_audio_chunks(audio_path):
+        if chunk["index"] in existing:
+            logger.info(
+                f"  Chunk {chunk['index'] + 1} already done, skipping"
+            )
+            chunk_results.append(existing[chunk["index"]])
+            # Free the chunk's audio data we just read but don't need
+            del chunk
+            continue
+
+        logger.info(
+            f"  Transcribing chunk {chunk['index'] + 1} "
+            f"(offset={chunk['start_offset']:.0f}s)"
+        )
+        result = _transcribe_single_chunk(model, chunk)
+
+        # Persist immediately to disk
+        save_chunk_result(episode_id, result)
+        chunk_results.append(result)
+
+        # Free chunk waveform — we have what we need in result
+        del chunk
+
+    # Sort by index (in case resumed out of order)
+    chunk_results.sort(key=lambda c: c["index"])
+
+    # Merge into final segment list
+    merged_segments = merge_chunk_transcripts(
+        chunk_results,
+        overlap_seconds=settings.TRANSCRIPTION_CHUNK_OVERLAP_SECONDS,
+    )
+
+    # Build an info-like object for compatibility with calculate_metrics
+    languages = [c["language"] for c in chunk_results]
+    most_common_lang = max(set(languages), key=languages.count)
+    avg_lang_prob = sum(c["language_probability"] for c in chunk_results) / len(chunk_results)
+
+    info = type("ChunkedInfo", (), {
+        "language": most_common_lang,
+        "language_probability": avg_lang_prob,
+    })()
+
+    return merged_segments, info
+
+def transcribe_episode(
+    model: WhisperModel,
+    audio_path: Path,
+    episode_id: str | None = None,
+    episode_duration: float | None = None,
+) -> tuple[list[dict], object]:
+    """
+    Transcribes a single audio file into segments.
+
+    Chooses between single-pass and chunked strategy based on duration.
+    For chunked transcription, partial results are persisted to disk for
+    resumability.
+
+    Args:
+        model: Loaded WhisperModel instance.
+        audio_path: Path to MP3 audio file.
+        episode_id: Episode ID, required for chunked transcription persistence.
+        episode_duration: Audio duration in seconds. Used to decide chunking
+            strategy. If not provided, single-pass is used.
 
     Returns:
         Tuple of (segments list, transcription info object).
     """
+    use_chunking = (
+        episode_duration is not None
+        and needs_chunking(episode_duration)
+    )
+
+    if use_chunking:
+        if episode_id is None:
+            raise ValueError(
+                "episode_id is required for chunked transcription "
+                "(used for partial-results persistence)"
+            )
+        logger.info(
+            f"Episode duration: {episode_duration:.0f}s "
+            f"(> {settings.LONG_TRANSCRIPTION_THRESHOLD_SECONDS}s threshold). "
+            f"Using chunked transcription."
+        )
+        return transcribe_in_chunks(model, audio_path, episode_id)
+
+    # Single-pass path (original behavior)
+    duration_log = (
+        f"{episode_duration:.0f}s" if episode_duration else "unknown duration"
+    )
+    logger.info(f"Episode duration: {duration_log}. Using single-pass transcription.")
+
     segments_gen, info = model.transcribe(
         str(audio_path),
         language=settings.WHISPER_LANGUAGE,
@@ -47,10 +477,13 @@ def transcribe_episode(model: WhisperModel, audio_path: Path) -> tuple[list[dict
         no_speech_threshold=settings.WHISPER_NO_SPEECH_THRESHOLD,
         compression_ratio_threshold=settings.WHISPER_COMPRESSION_RATIO_THRESHOLD,
         condition_on_previous_text=settings.WHISPER_CONDITION_ON_PREVIOUS_TEXT,
-        chunk_length=settings.WHISPER_CHUNK_LENGTH,  # process in chunks to avoid OOM
+        chunk_length=settings.WHISPER_CHUNK_LENGTH,
     )
 
-    logger.info(f"Detected language: {info.language} (confidence: {info.language_probability:.2f})")
+    logger.info(
+        f"Detected language: {info.language} "
+        f"(confidence: {info.language_probability:.2f})"
+    )
 
     results = []
     for segment in segments_gen:
@@ -247,9 +680,15 @@ def run(max_episodes: int = None):
             continue
 
         try:
-            segments, info = transcribe_episode(model, audio_path)
+            segments, info = transcribe_episode(
+                model,
+                audio_path,
+                episode_id=episode.id,
+                episode_duration=episode.duration_seconds,
+            )
             metrics = calculate_metrics(segments, info, episode)
             save_transcription(engine, episode, segments, metrics)
+            cleanup_temp_chunks(episode.id)
             success_count += 1
             logger.info(f"Progress: {i}/{total} | Success: {success_count} | Failed: {failed_count}")
 
