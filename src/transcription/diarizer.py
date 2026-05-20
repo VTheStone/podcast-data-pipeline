@@ -2,15 +2,26 @@
 Diarization pipeline for podcast episodes.
 Uses pyannote/audio 4.x to identify speakers in each episode.
 Saves speaker segments to the chunks table in the database.
+
 Idempotent: skips episodes already diarized.
+
+Strategy:
+1. Try single-pass diarization (fast, works for most episodes)
+2. If CUDA OOM detected, fall back to chunked processing via ffmpeg:
+   - Audio is split into temporary MP3 chunks
+   - Each chunk is diarized independently
+   - Speakers are kept distinct across chunks (no re-identification yet)
 """
 
 import os
 import json
+import shutil
+import subprocess
+from pathlib import Path
+
 import torch
 import soundfile as sf
 import numpy as np
-from pathlib import Path
 from loguru import logger
 from pyannote.audio import Pipeline
 from sqlalchemy.orm import Session
@@ -18,6 +29,8 @@ from sqlalchemy.orm import Session
 from config import settings
 from src.ingestion.database import Episode, Chunk, Transcription, get_engine
 
+
+# ---------- Pipeline loading ----------
 
 def load_pipeline(device: str) -> Pipeline:
     """
@@ -35,33 +48,42 @@ def load_pipeline(device: str) -> Pipeline:
         token=settings.HF_TOKEN,
     )
     pipeline.to(torch.device(device))
-
-    # Set embedding batch size as attribute (pyannote 4.x doesn't accept it as kwarg)
     pipeline.embedding_batch_size = settings.DIARIZATION_EMBEDDING_BATCH_SIZE
-    
     logger.success("Pipeline loaded successfully")
     return pipeline
 
 
-def load_audio(audio_path: Path) -> dict:
+# ---------- OOM detection ----------
+
+def is_oom_error(exc: Exception) -> bool:
     """
-    Loads audio file as tensor using soundfile.
-    Bypasses torchcodec/FFmpeg dependency.
+    Checks if an exception is a CUDA out-of-memory error or its known
+    masked variants (like 'GET was unable to find an engine').
 
     Args:
-        audio_path: Path to MP3 audio file.
+        exc: The exception to inspect.
 
     Returns:
-        Dictionary with waveform tensor and sample_rate.
+        True if it looks like a memory issue.
     """
-    waveform, sample_rate = sf.read(str(audio_path), always_2d=True)
-    waveform = torch.tensor(waveform.T, dtype=torch.float32)
-    return {"waveform": waveform, "sample_rate": sample_rate}
+    msg = str(exc).lower()
+    oom_signatures = [
+        "out of memory",
+        "cuda error: out of memory",
+        "get was unable to find an engine",  # pyannote's masked OOM
+        "cuda out of memory",
+    ]
+    return any(sig in msg for sig in oom_signatures)
 
 
-def diarize_episode(pipeline: Pipeline, audio_path: Path) -> tuple[list[dict], np.ndarray]:
+# ---------- Single-pass diarization ----------
+
+def diarize_single_pass(
+    pipeline: Pipeline,
+    audio_path: Path,
+) -> tuple[list[dict], np.ndarray]:
     """
-    Runs diarization on a single episode.
+    Runs single-pass diarization on the entire audio file.
 
     Args:
         pipeline: Loaded pyannote Pipeline instance.
@@ -69,8 +91,14 @@ def diarize_episode(pipeline: Pipeline, audio_path: Path) -> tuple[list[dict], n
 
     Returns:
         Tuple of (segments list, speaker embeddings array).
+
+    Raises:
+        RuntimeError: If diarization fails (including OOM cases).
     """
-    audio_input = load_audio(audio_path)
+    waveform, sample_rate = sf.read(str(audio_path), always_2d=True)
+    waveform = torch.tensor(waveform.T, dtype=torch.float32)
+
+    audio_input = {"waveform": waveform, "sample_rate": sample_rate}
 
     diarization = pipeline(
         audio_input,
@@ -79,7 +107,7 @@ def diarize_episode(pipeline: Pipeline, audio_path: Path) -> tuple[list[dict], n
     )
 
     annotation = diarization.speaker_diarization
-    embeddings = diarization.speaker_embeddings
+    embeddings = np.asarray(diarization.speaker_embeddings)
 
     segments = []
     for turn, _, speaker in annotation.itertracks(yield_label=True):
@@ -90,24 +118,247 @@ def diarize_episode(pipeline: Pipeline, audio_path: Path) -> tuple[list[dict], n
             "duration": round(turn.end - turn.start, 2),
         })
 
-    speakers = list(set(seg["speaker"] for seg in segments))
-    logger.info(f"Detected {len(speakers)} speakers: {sorted(speakers)}")
-    logger.info(f"Total segments: {len(segments)}")
-
     return segments, embeddings
 
 
-def get_audio_path(episode: Episode, audio_dir: str) -> Path | None:
+# ---------- Chunked diarization (fallback) ----------
+
+def extract_audio_chunks_with_ffmpeg(
+    audio_path: Path,
+    episode_id: str,
+) -> list[dict]:
     """
-    Finds the audio file for an episode on disk.
+    Extracts audio chunks as temporary MP3 files using ffmpeg.
+
+    Each chunk gets its own file, allowing independent processing
+    without holding the full audio in memory.
 
     Args:
-        episode: Episode database model instance.
-        audio_dir: Directory where audio files are stored.
+        audio_path: Path to source MP3 file.
+        episode_id: Used to name the temporary directory.
 
     Returns:
-        Path to audio file or None if not found.
+        List of chunk metadata dicts with: path, start_offset, index.
     """
+    # Probe duration via ffprobe
+    probe_cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(audio_path),
+    ]
+    result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+    total_duration_s = float(result.stdout.strip())
+
+    chunk_s = settings.DIARIZATION_CHUNK_DURATION_SECONDS
+    overlap_s = settings.DIARIZATION_CHUNK_OVERLAP_SECONDS
+    stride_s = chunk_s - overlap_s
+
+    temp_dir = Path(settings.DIARIZATION_TEMP_DIR) / str(episode_id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    chunks = []
+    start_s = 0.0
+    index = 0
+
+    while start_s < total_duration_s:
+        end_s = min(start_s + chunk_s, total_duration_s)
+        duration_s = end_s - start_s
+
+        chunk_path = temp_dir / f"chunk_{index:03d}.mp3"
+
+        # ffmpeg extracts the chunk
+        # -ss / -t: start and duration
+        # -c copy: no re-encoding (super fast)
+        # -y: overwrite
+        # -loglevel error: silent unless error
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",
+            "-loglevel", "error",
+            "-ss", str(start_s),
+            "-t", str(duration_s),
+            "-i", str(audio_path),
+            "-c", "copy",
+            str(chunk_path),
+        ]
+        subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+
+        chunks.append({
+            "path": chunk_path,
+            "start_offset": start_s,
+            "index": index,
+        })
+
+        if end_s == total_duration_s:
+            break
+        start_s += stride_s
+        index += 1
+
+    logger.info(
+        f"Extracted {len(chunks)} audio chunks to {temp_dir} "
+        f"(chunk_duration={chunk_s}s, overlap={overlap_s}s)"
+    )
+    return chunks
+
+
+def cleanup_temp_chunks(episode_id: str) -> None:
+    """Removes the temporary diarization chunks directory."""
+    temp_dir = Path(settings.DIARIZATION_TEMP_DIR) / str(episode_id)
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        logger.debug(f"Cleaned up temp chunks at {temp_dir}")
+
+
+def diarize_chunked(
+    pipeline: Pipeline,
+    audio_path: Path,
+    episode_id: str,
+) -> tuple[list[dict], np.ndarray]:
+    """
+    Diarizes a long audio file by splitting it into MP3 chunks via ffmpeg
+    and processing each chunk independently.
+
+    Speakers are kept distinct across chunks (no re-identification).
+    Chunk N's local speakers (SPEAKER_00..SPEAKER_NN) are mapped to
+    global labels by adding an offset based on previous chunks' counts.
+
+    Args:
+        pipeline: Loaded pyannote Pipeline instance.
+        audio_path: Path to source MP3 file.
+        episode_id: Episode ID (for temp file organization).
+
+    Returns:
+        Tuple of (merged segments with global speaker labels, embeddings).
+    """
+    chunks = extract_audio_chunks_with_ffmpeg(audio_path, episode_id)
+    total_chunks = len(chunks)
+
+    global_segments = []
+    global_embeddings_list = []
+    speaker_offset = 0  # how many global speakers have been seen so far
+
+    try:
+        for chunk_meta in chunks:
+            i = chunk_meta["index"]
+            logger.info(
+                f"  Diarizing chunk {i + 1}/{total_chunks} "
+                f"(offset={chunk_meta['start_offset']:.0f}s)"
+            )
+
+            chunk_segments, chunk_embeddings = diarize_single_pass(
+                pipeline,
+                chunk_meta["path"],
+            )
+
+            # Build mapping: local SPEAKER_XX → global SPEAKER_YY
+            local_speakers = sorted({seg["speaker"] for seg in chunk_segments})
+            local_to_global = {}
+            for local_idx, local_label in enumerate(local_speakers):
+                global_idx = speaker_offset + local_idx
+                local_to_global[local_label] = f"SPEAKER_{global_idx:02d}"
+
+            # Apply time offset and remap speakers
+            time_offset = chunk_meta["start_offset"]
+            for seg in chunk_segments:
+                global_segments.append({
+                    "start": round(seg["start"] + time_offset, 2),
+                    "end": round(seg["end"] + time_offset, 2),
+                    "speaker": local_to_global[seg["speaker"]],
+                    "duration": seg["duration"],
+                })
+
+            # Append embeddings in same order as local_speakers
+            if len(chunk_embeddings) > 0:
+                global_embeddings_list.append(chunk_embeddings)
+
+            speaker_offset += len(local_speakers)
+
+            # Free CUDA cache between chunks
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        # Sort by start time
+        global_segments.sort(key=lambda s: s["start"])
+
+        # Stack embeddings if any
+        if global_embeddings_list:
+            global_embeddings = np.vstack(global_embeddings_list)
+        else:
+            global_embeddings = np.array([])
+
+        logger.info(
+            f"Chunked diarization complete: {speaker_offset} unique speakers "
+            f"across {total_chunks} chunks, {len(global_segments)} total segments"
+        )
+        return global_segments, global_embeddings
+
+    finally:
+        # Always clean up temp files, even on failure
+        cleanup_temp_chunks(episode_id)
+
+
+# ---------- Main per-episode entry point ----------
+
+def diarize_episode(
+    pipeline: Pipeline,
+    audio_path: Path,
+    episode_id: str,
+) -> tuple[list[dict], np.ndarray]:
+    """
+    Diarizes an episode using smart fallback strategy:
+    1. Try single-pass diarization
+    2. If OOM, fall back to chunked diarization via ffmpeg
+
+    Args:
+        pipeline: Loaded pyannote Pipeline instance.
+        audio_path: Path to MP3 audio file.
+        episode_id: Episode ID (for temp file organization).
+
+    Returns:
+        Tuple of (segments list, speaker embeddings array).
+
+    Raises:
+        RuntimeError: If both single-pass and chunked strategies fail.
+    """
+    # Clear any leftover GPU memory before starting
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # Try single-pass first
+    try:
+        logger.info("Attempting single-pass diarization")
+        segments, embeddings = diarize_single_pass(pipeline, audio_path)
+
+        speakers = sorted({seg["speaker"] for seg in segments})
+        logger.info(f"Detected {len(speakers)} speakers: {speakers}")
+        logger.info(f"Total segments: {len(segments)}")
+
+        return segments, embeddings
+
+    except Exception as e:
+        if not is_oom_error(e):
+            raise
+
+        logger.warning(f"Single-pass failed with OOM: {e}")
+        logger.warning("Falling back to chunked diarization via ffmpeg")
+
+        # Clean up GPU state before retry
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    # Fallback: chunked
+    segments, embeddings = diarize_chunked(pipeline, audio_path, episode_id)
+    speakers = sorted({seg["speaker"] for seg in segments})
+    logger.info(f"Detected {len(speakers)} speakers (chunked): {speakers}")
+    logger.info(f"Total segments: {len(segments)}")
+    return segments, embeddings
+
+
+# ---------- Utility: audio path resolution ----------
+
+def get_audio_path(episode: Episode, audio_dir: str) -> Path | None:
+    """Finds the audio file for an episode on disk."""
     safe_title = "".join(
         c if c.isalnum() or c in " -_" else "_"
         for c in episode.title
@@ -122,44 +373,34 @@ def get_audio_path(episode: Episode, audio_dir: str) -> Path | None:
     return audio_path
 
 
+# ---------- Persistence ----------
+
 def save_diarization(
     engine,
     episode: Episode,
     segments: list[dict],
     embeddings: np.ndarray,
 ) -> None:
-    """
-    Saves diarization segments to the chunks table.
-    Updates episode diarized flag.
-
-    Args:
-        engine: SQLAlchemy engine instance.
-        episode: Episode database model instance.
-        segments: List of diarization segments.
-        embeddings: Speaker embeddings numpy array.
-    """
+    """Saves diarization segments to the chunks table."""
     with Session(engine) as session:
-        # Get transcription id for this episode
         transcription = session.query(Transcription).filter(
             Transcription.episode_id == episode.id
         ).first()
 
         transcription_id = transcription.id if transcription else None
 
-        # Save each segment as a chunk with speaker label
         for i, seg in enumerate(segments):
             chunk = Chunk(
                 episode_id=episode.id,
                 transcription_id=transcription_id,
                 chunk_index=i,
-                text=None,          # text will be filled in phase 4 (alignment)
+                text=None,
                 start_time=seg["start"],
                 end_time=seg["end"],
                 speaker=seg["speaker"],
             )
             session.add(chunk)
 
-        # Update episode flag
         ep = session.get(Episode, episode.id)
         ep.diarized = True
 
@@ -168,17 +409,15 @@ def save_diarization(
     logger.success(f"Saved {len(segments)} diarization segments")
 
 
-def run(
-    max_episodes: int = None,
-    skip_transcription_check: bool = False,
-):
+# ---------- Main runner ----------
+
+def run(max_episodes: int = None, skip_transcription_check: bool = False):
     """
     Main entry point for the diarization pipeline.
 
     Args:
         max_episodes: Maximum number of episodes to diarize (None = all).
-        skip_transcription_check: If True, runs diarization on all downloaded
-            episodes regardless of transcription status. Useful for testing.
+        skip_transcription_check: If True, ignores Episode.transcribed flag.
     """
     engine = get_engine()
 
@@ -203,7 +442,6 @@ def run(
         logger.success("All episodes already diarized")
         return
 
-    # Load pipeline once for all episodes
     pipeline = load_pipeline(settings.DEVICE)
 
     success_count = 0
@@ -220,12 +458,14 @@ def run(
             continue
 
         try:
-            segments, embeddings = diarize_episode(pipeline, audio_path)
+            segments, embeddings = diarize_episode(pipeline, audio_path, episode.id)
             save_diarization(engine, episode, segments, embeddings)
             success_count += 1
-            logger.info(f"Progress: {i}/{total} | Success: {success_count} | Failed: {failed_count}")
+            logger.info(
+                f"Progress: {i}/{total} | "
+                f"Success: {success_count} | Failed: {failed_count}"
+            )
 
-            # Clear CUDA cache between episodes to prevent fragmentation
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
@@ -234,11 +474,9 @@ def run(
             failed_count += 1
             failed_episodes.append(episode.title)
 
-            # Clear cache after failure too
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-    # Final report
     logger.info("=== Diarization Summary ===")
     logger.info(f"Total processed: {total}")
     logger.success(f"Successfully diarized: {success_count}")
