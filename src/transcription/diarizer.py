@@ -25,6 +25,8 @@ import numpy as np
 from loguru import logger
 from pyannote.audio import Pipeline
 from sqlalchemy.orm import Session
+import gc
+import time
 
 from config import settings
 from src.ingestion.database import Episode, Chunk, Transcription, get_engine
@@ -54,6 +56,42 @@ def load_pipeline(device: str) -> Pipeline:
 
 
 # ---------- OOM detection ----------
+
+def safe_cuda_cleanup(wait_seconds: int = 10) -> None:
+    """
+    Safely attempts to recover CUDA memory/state after OOM.
+
+    CUDA can enter an unstable state after OOM, so every cleanup
+    operation must be guarded individually.
+    """
+    if not torch.cuda.is_available():
+        return
+
+    logger.warning(
+        f"Waiting {wait_seconds}s for CUDA memory recovery before retry"
+    )
+
+    time.sleep(wait_seconds)
+
+    try:
+        gc.collect()
+    except Exception as e:
+        logger.warning(f"gc.collect failed: {e}")
+
+    try:
+        torch.cuda.synchronize()
+    except Exception as e:
+        logger.warning(f"cuda synchronize failed: {e}")
+
+    try:
+        torch.cuda.empty_cache()
+    except Exception as e:
+        logger.warning(f"cuda empty_cache failed: {e}")
+
+    try:
+        torch.cuda.ipc_collect()
+    except Exception as e:
+        logger.warning(f"cuda ipc_collect failed: {e}")
 
 def is_oom_error(exc: Exception) -> bool:
     """
@@ -95,19 +133,47 @@ def diarize_single_pass(
     Raises:
         RuntimeError: If diarization fails (including OOM cases).
     """
-    waveform, sample_rate = sf.read(str(audio_path), always_2d=True)
+    temp_wav = audio_path.with_suffix(".diarization.wav")
+
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",
+        "-i", str(audio_path),
+        "-ac", "1",          # mono
+        "-ar", "16000",      # 16kHz
+        "-vn",
+        "-loglevel", "error",
+        str(temp_wav),
+    ]
+
+    subprocess.run(ffmpeg_cmd, check=True)
+
+    waveform, sample_rate = sf.read(
+        str(temp_wav),
+        always_2d=True,
+    )
+
+    # Convert stereo -> mono to reduce VRAM usage
+    if waveform.shape[1] > 1:
+        waveform = waveform.mean(axis=1, keepdims=True, dtype=np.float32)
+
     waveform = torch.tensor(waveform.T, dtype=torch.float32)
+    waveform = waveform.contiguous()
 
     audio_input = {"waveform": waveform, "sample_rate": sample_rate}
 
-    diarization = pipeline(
-        audio_input,
-        min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
-        max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
-    )
+    with torch.inference_mode():
+        diarization = pipeline(
+            audio_input,
+            min_speakers=settings.DIARIZATION_MIN_SPEAKERS,
+            max_speakers=settings.DIARIZATION_MAX_SPEAKERS,
+        )
 
     annotation = diarization.speaker_diarization
     embeddings = np.asarray(diarization.speaker_embeddings)
+    del diarization
+    del waveform
+    gc.collect()
 
     segments = []
     for turn, _, speaker in annotation.itertracks(yield_label=True):
@@ -117,6 +183,11 @@ def diarize_single_pass(
             "speaker": speaker,
             "duration": round(turn.end - turn.start, 2),
         })
+        
+    try:
+        temp_wav.unlink(missing_ok=True)
+    except Exception:
+        pass
 
     return segments, embeddings
 
@@ -274,9 +345,7 @@ def diarize_chunked(
 
             speaker_offset += len(local_speakers)
 
-            # Free CUDA cache between chunks
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            safe_cuda_cleanup(wait_seconds=0)
 
         # Sort by start time
         global_segments.sort(key=lambda s: s["start"])
@@ -304,7 +373,7 @@ def diarize_episode(
     pipeline: Pipeline,
     audio_path: Path,
     episode_id: str,
-) -> tuple[list[dict], np.ndarray]:
+) -> tuple[list[dict], np.ndarray, Pipeline]:
     """
     Diarizes an episode using smart fallback strategy:
     1. Try single-pass diarization
@@ -321,9 +390,7 @@ def diarize_episode(
     Raises:
         RuntimeError: If both single-pass and chunked strategies fail.
     """
-    # Clear any leftover GPU memory before starting
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    safe_cuda_cleanup()
 
     # Try single-pass first
     try:
@@ -334,7 +401,7 @@ def diarize_episode(
         logger.info(f"Detected {len(speakers)} speakers: {speakers}")
         logger.info(f"Total segments: {len(segments)}")
 
-        return segments, embeddings
+        return segments, embeddings, pipeline
 
     except Exception as e:
         if not is_oom_error(e):
@@ -343,16 +410,32 @@ def diarize_episode(
         logger.warning(f"Single-pass failed with OOM: {e}")
         logger.warning("Falling back to chunked diarization via ffmpeg")
 
-        # Clean up GPU state before retry
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        logger.warning("Releasing corrupted CUDA state")
+
+        try:
+            del pipeline
+        except Exception:
+            pass
+
+        safe_cuda_cleanup(wait_seconds=15)
+
+        logger.warning(
+            "CUDA context corrupted after OOM. "
+            "Reloading fallback pipeline on CPU."
+        )
+
+        pipeline = load_pipeline("cpu")
 
     # Fallback: chunked
-    segments, embeddings = diarize_chunked(pipeline, audio_path, episode_id)
+    segments, embeddings = diarize_chunked(
+        pipeline,
+        audio_path,
+        episode_id,
+    )
     speakers = sorted({seg["speaker"] for seg in segments})
     logger.info(f"Detected {len(speakers)} speakers (chunked): {speakers}")
     logger.info(f"Total segments: {len(segments)}")
-    return segments, embeddings
+    return segments, embeddings, pipeline
 
 
 # ---------- Utility: audio path resolution ----------
@@ -458,7 +541,11 @@ def run(max_episodes: int = None, skip_transcription_check: bool = False):
             continue
 
         try:
-            segments, embeddings = diarize_episode(pipeline, audio_path, episode.id)
+            segments, embeddings, pipeline = diarize_episode(
+                pipeline,
+                audio_path,
+                episode.id,
+            )
             save_diarization(engine, episode, segments, embeddings)
             success_count += 1
             logger.info(
@@ -466,16 +553,29 @@ def run(max_episodes: int = None, skip_transcription_check: bool = False):
                 f"Success: {success_count} | Failed: {failed_count}"
             )
 
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            safe_cuda_cleanup(wait_seconds=1)
+
+            # Restore CUDA pipeline if fallback switched to CPU
+            if settings.DEVICE == "cuda":
+                try:
+                    current_device = next(
+                        pipeline.model.parameters()
+                    ).device.type
+                except Exception:
+                    current_device = "unknown"
+
+                if current_device != "cuda":
+                    logger.warning(
+                        "Reloading main CUDA pipeline for next episodes"
+                    )
+                    pipeline = load_pipeline("cuda")
 
         except Exception as e:
             logger.error(f"Failed to diarize {episode.title[:60]}: {e}")
             failed_count += 1
             failed_episodes.append(episode.title)
 
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            safe_cuda_cleanup(wait_seconds=0)
 
     logger.info("=== Diarization Summary ===")
     logger.info(f"Total processed: {total}")
