@@ -80,6 +80,7 @@ DIARIZATION_MODEL = "pyannote/speaker-diarization-3.1"
 DIARIZATION_MIN_SPEAKERS = 2
 SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
 SPEAKER_SIMILARITY_THRESHOLD = 0.85
+DIARIZATION_EMBEDDING_BATCH_SIZE = 32
 
 # Long-episode handling via temporal chunking.
 # Episodes longer than the threshold are split into overlapping chunks
@@ -95,6 +96,15 @@ REID_SIMILARITY_THRESHOLD = 0.75            # cosine similarity to match speaker
 # accumulating over many chunks. Reloading forces a full reset.
 # Set to None to disable reloading.
 RELOAD_PIPELINE_EVERY_N_CHUNKS = 4
+
+# Fallback strategy for episodes that cause CUDA OOM in single-pass diarization.
+# When OOM is detected, the pipeline retries with chunked processing.
+# Each chunk is extracted as a temporary MP3 file via ffmpeg and processed
+# independently. Speakers are kept distinct across chunks (no re-identification
+# in this version — see v2 backlog).
+DIARIZATION_CHUNK_DURATION_SECONDS = 1800   # 30 minutes per chunk
+DIARIZATION_CHUNK_OVERLAP_SECONDS = 30      # overlap for context continuity
+DIARIZATION_TEMP_DIR = "data/temp_diarization"
 
 # ============================================================================
 # Phase 4: Chunking (technical defaults)
