@@ -568,7 +568,19 @@ def run(max_episodes: int = None, skip_transcription_check: bool = False):
                     logger.warning(
                         "Reloading main CUDA pipeline for next episodes"
                     )
-                    pipeline = load_pipeline("cuda")
+
+                    try:
+                        pipeline = load_pipeline("cuda")
+
+                    except Exception as reload_error:
+                        logger.warning(
+                            "CUDA pipeline reload failed after successful "
+                            f"diarization: {reload_error}"
+                        )
+
+                        logger.warning(
+                            "Keeping CPU pipeline active for remaining episodes"
+                        )
 
         except Exception as e:
             logger.error(f"Failed to diarize {episode.title[:60]}: {e}")
