@@ -571,15 +571,10 @@ def run(max_episodes: int = None, skip_transcription_check: bool = False):
 
                     try:
                         pipeline = load_pipeline("cuda")
-
                     except Exception as reload_error:
                         logger.warning(
-                            "CUDA pipeline reload failed after successful "
-                            f"diarization: {reload_error}"
-                        )
-
-                        logger.warning(
-                            "Keeping CPU pipeline active for remaining episodes"
+                            f"Could not reload CUDA pipeline, "
+                            f"continuing on CPU: {reload_error}"
                         )
 
         except Exception as e:
