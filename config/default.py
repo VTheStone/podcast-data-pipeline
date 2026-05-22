@@ -80,7 +80,7 @@ DIARIZATION_MODEL = "pyannote/speaker-diarization-3.1"
 DIARIZATION_MIN_SPEAKERS = 2
 SPEAKER_EMBEDDING_MODEL = "pyannote/embedding"
 SPEAKER_SIMILARITY_THRESHOLD = 0.85
-DIARIZATION_EMBEDDING_BATCH_SIZE = 32
+DIARIZATION_EMBEDDING_BATCH_SIZE = 4
 
 # Long-episode handling via temporal chunking.
 # Episodes longer than the threshold are split into overlapping chunks

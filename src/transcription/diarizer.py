@@ -108,8 +108,10 @@ def is_oom_error(exc: Exception) -> bool:
     oom_signatures = [
         "out of memory",
         "cuda error: out of memory",
-        "get was unable to find an engine",  # pyannote's masked OOM
+        "get was unable to find an engine",
         "cuda out of memory",
+        "batch_size",
+        "memory error",
     ]
     return any(sig in msg for sig in oom_signatures)
 
