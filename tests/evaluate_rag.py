@@ -10,13 +10,7 @@ from pathlib import Path
 from loguru import logger
 
 from src.rag.pipeline import RAGPipeline
-from config import settings
-import importlib
-
-queries_module = importlib.import_module(
-    f"tests.evaluation.{settings.PODCAST_NAME}_queries"
-)
-EVALUATION_QUERIES = queries_module.EVALUATION_QUERIES
+from tests.rag_evaluation_queries import EVALUATION_QUERIES
 
 
 def run_evaluation():
@@ -53,22 +47,20 @@ def run_evaluation():
             print(f"  [{source['time']}] {source['episode_title'][:60]} (sim: {source['similarity']})")
         print(f"\nTime: {elapsed:.2f}s | Tokens: {result.get('tokens_used', 'N/A')}")
 
-        # Manual evaluation prompts
-        print("\nManual evaluation:")
-        print("  Faithfulness    (1=fail, 2=partial, 3=good): ?")
-        print("  Answer Relevance(1=fail, 2=partial, 3=good): ?")
-        print("  Citation Accuracy(1=fail, 2=partial, 3=good): ?")
+        if q["reference_answer"]:
+            print(f"\nReference answer:\n{q['reference_answer']}")
 
         results.append({
             "id": q["id"],
             "type": q["type"],
             "query": q["query"],
             "answer": result["answer"],
+            "reference_answer": q["reference_answer"],
             "sources": result["sources"],
             "chunks_used": result["chunks_used"],
             "elapsed_seconds": round(elapsed, 2),
             "tokens_used": result.get("tokens_used", 0),
-            "expected_episodes": q["expected_episodes"],
+            "expected_episode_ids": q["expected_episode_ids"],
             "notes": q["notes"],
         })
 
