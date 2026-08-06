@@ -64,6 +64,7 @@ class RAGPipeline:
             return {
                 "answer": build_no_results_response(),
                 "sources": [],
+                "context_chunks": [],
                 "chunks_used": 0,
                 "model": settings.LLM_MODEL,
             }
@@ -106,6 +107,7 @@ class RAGPipeline:
         return {
             "answer": answer,
             "sources": sources,
+            "context_chunks": [c["text"] for c in chunks],
             "chunks_used": len(chunks),
             "model": settings.LLM_MODEL,
             "tokens_used": response.usage.total_tokens,

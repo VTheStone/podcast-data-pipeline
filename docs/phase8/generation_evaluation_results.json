@@ -1,0 +1,143 @@
+{
+  "timestamp": "2026-08-06T19:53:29.714151",
+  "judge_model": "llama-3.3-70b-versatile",
+  "averages": {
+    "faithfulness": 4.8182,
+    "answer_relevancy": 4.7273,
+    "answer_correctness": 3.4545
+  },
+  "per_query": [
+    {
+      "id": "F01",
+      "type": "factual",
+      "query": "Quem é o Alexandre Ottoni?",
+      "answer": "O Alexandre Ottoni é mencionado como \"o jovem nerd\" [Trecho 5, Ep: NerdCast 857, 34:37] e também é citado em outros trechos, como alguém que pode saber falar sobre determinados assuntos, mas não há informações detalhadas sobre quem ele é ou o que ele faz [Trecho 1, Ep: NerdCast 844, 74:41]. Além disso, é mencionado que Alexandre Ottoni é conhecido como \"o jovem\" [Trecho 5, Ep: NerdCast 857, 34:37] e que ele pode ter uma relação com o podcast ou com os participantes das conversas.",
+      "reference_answer": "Alexandre Ottoni é um dos apresentadores e cofundador do NerdCast (Jovem Nerd), ao lado de Azaghal (Deive Pazos).",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 1,
+      "judge_reasoning": "The answer provides some relevant information about Alexandre Ottoni being mentioned in the context, but it does not accurately identify him as a presenter and cofounder of the NerdCast."
+    },
+    {
+      "id": "F02",
+      "type": "factual",
+      "query": "Quais astronautas participaram da missão Artemis II?",
+      "answer": "Os astronautas que participaram da missão Artemis II mencionados nos trechos são: Jeremy, Victor Glover, Cristina (ou Christina) e Reed Wiseman [Trecho 1, Ep: NerdCast 1026, 46:28]. Além disso, é mencionado que Cristina é a astronauta mais experiente dos Estados Unidos e que ficou 328 dias no espaço [Trecho 1, Ep: NerdCast 1026, 46:28] e [Trecho 5, Ep: NerdCast 1026, 45:14].",
+      "reference_answer": "Os quatro astronautas da Artemis II são Reed Wiseman (comandante), Victor Glover, Christina Koch e Jeremy Hansen — este último em seu primeiro voo espacial, enquanto os outros três já tinham experiência anterior no espaço.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 4,
+      "judge_reasoning": "A resposta fornece informações relevantes sobre os astronautas da missão Artemis II, mas não inclui todos os detalhes corretos em comparação com a resposta de referência."
+    },
+    {
+      "id": "F03",
+      "type": "factual",
+      "query": "O que é o programa Artemis da NASA?",
+      "answer": "O programa Artemis da NASA é uma iniciativa organizada para levar a humanidade novamente à Lua, englobando várias missões e instâncias diferentes com o mesmo objetivo [Trecho 5, Episódio: NerdCast 1026, 43:42]. Ele é mais abrangente do que o programa Apolo, pois inclui missões de carga e outras interações com o objetivo de estabelecer uma presença humana na Lua [Trecho 5, Episódio: NerdCast 1026, 43:42]. O programa Artemis inclui missões como a Artemis I, que foi uma missão de testes não tripulada, e a Artemis II, que foi uma missão de testes tripulada [Trecho 5, Episódio: NerdCast 1026, 43:42].",
+      "reference_answer": "O programa Artemis é a iniciativa da NASA para levar a humanidade de volta à Lua, composta por várias missões (como a Artemis I, não tripulada, e a Artemis II, tripulada) além de missões de carga, com o objetivo de estabelecer presença lunar sustentável.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 5,
+      "judge_reasoning": "A resposta está alinhada com o contexto e a resposta de referência, fornecendo informações precisas sobre o programa Artemis da NASA."
+    },
+    {
+      "id": "C01",
+      "type": "comparativa",
+      "query": "Qual a diferença entre a Artemis I e a Artemis II?",
+      "answer": "A diferença entre a Artemis I e a Artemis II é que a Artemis I foi uma missão de testes não tripulada, lançada em 2022 [Trecho 1, Ep: NerdCast 1026, 30:26], enquanto a Artemis II foi uma missão de testes tripulada [Trecho 2, Ep: NerdCast 1026, 43:42]. Além disso, a Artemis I teve alguns problemas no escudo de reentrada, que foram ajustados para a missão Artemis II [Trecho 1, Ep: NerdCast 1026, 30:26].",
+      "reference_answer": "A Artemis I (2022) foi uma missão de teste não tripulada, usada para validar sistemas como o escudo de reentrada da cápsula Orion. A Artemis II também foi uma missão de teste, mas tripulada, levando quatro astronautas para orbitar a Lua e voltar, sem pousar.",
+      "chunks_used": 2,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 4,
+      "judge_reasoning": "The answer accurately reflects the differences between Artemis I and Artemis II as described in the context, but lacks the detail about Artemis II not landing on the moon."
+    },
+    {
+      "id": "C02",
+      "type": "comparativa",
+      "query": "Como o NerdCast compara exploração espacial com outros temas de ciência?",
+      "answer": "O NerdCast compara a exploração espacial com outros temas de ciência de forma interdisciplinar, abordando tópicos como a física e a tecnologia envolvida na corrida espacial [Trecho 3, Ep: NerdCast 835, 93:25]. Além disso, eles discutem como a tecnologia desenvolvida para a exploração espacial pode ser aplicada em outras áreas, como a criação de satélites e a possibilidade de tornar a profissão de astronauta mais acessível [Trecho 5, Ep: NerdCast 788, 74:46]. Em outro episódio, eles mencionam a relação entre a exploração espacial e a física, discutindo a velocidade de escape e a resistência do ar [Trecho 4, Ep: NerdCast 777, 117:43]. Essas comparações demonstram a abordagem do NerdCast em conectar a exploração espacial com outros temas científicos.",
+      "reference_answer": "O NerdCast trata exploração espacial como um entre vários temas recorrentes de ciência, ao lado de séries como 'A Ciência dos Super-Heróis' e 'Mitos da Ciência' — cobrindo espaço em episódios como 'Colonizando o Espaço' e 'O Espaço Disputado', sem tratá-lo como o tema central único do podcast.",
+      "chunks_used": 5,
+      "faithfulness": 4,
+      "answer_relevancy": 4,
+      "answer_correctness": 2,
+      "judge_reasoning": "The answer attempts to address the question by providing specific examples from the context, but it does not accurately capture the essence of how NerdCast compares space exploration to other science topics as described in the reference answer."
+    },
+    {
+      "id": "R01",
+      "type": "resumo",
+      "query": "Sobre o que foi o episódio do NerdCast sobre Artemis II?",
+      "answer": "Não encontrei essa informação nos episódios disponíveis.",
+      "reference_answer": "O episódio cobre a missão Artemis II da NASA: o voo tripulado mais distante já feito por seres humanos, a tripulação (incluindo Victor Glover, Reed Wiseman e Christina Koch), a diferença em relação à Artemis I (não tripulada), os desafios técnicos e de custo do foguete SLS e da cápsula Orion, e o contexto político e orçamentário da NASA.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 5,
+      "judge_reasoning": "A resposta afirma que não encontrou a informação nos episódios disponíveis, o que está correto, pois o contexto não fornece informações sobre o episódio do NerdCast sobre Artemis II."
+    },
+    {
+      "id": "R02",
+      "type": "resumo",
+      "query": "Quais temas de tecnologia o NerdCast já discutiu?",
+      "answer": "O NerdCast discutiu temas como óculos de realidade virtual, especificamente o Apple Vision Pro [Trecho 1, Ep: NerdCast 889, 01:46], e a história da Disney como parque, incluindo os conceitos por trás da revolução que fizeram os Imagineers [Trecho 3, Ep: NerdCast 711, 01:50]. Além disso, também mencionou a parceria com a Alura, uma escola online de tecnologia, que oferece cursos sobre diversas áreas da tecnologia [Trecho 1, Ep: NerdCast 889, 01:46] e [Trecho 3, Ep: NerdCast 711, 01:50].",
+      "reference_answer": "O NerdCast já discutiu temas de tecnologia como inteligência artificial (incluindo episódios sobre ChatGPT e IA), a história e cultura da internet, privacidade digital, a série 'Tecnologias do Futuro' (com pelo menos 4 episódios), jogos de tabuleiro/videogames e cientistas em empresas de tecnologia.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 4,
+      "answer_correctness": 1,
+      "judge_reasoning": "The answer provides some relevant information about the NerdCast discussing technology topics, but it does not cover the breadth of topics mentioned in the reference answer."
+    },
+    {
+      "id": "CA01",
+      "type": "causal",
+      "query": "Por que a missão Artemis II foi considerada histórica?",
+      "answer": "A missão Artemis II foi considerada histórica porque ela está batendo um recorde de distância já alcançada por seres humanos em relação à Terra e passando pelo lado oculto da Lua [Trecho 2, Episódio: NerdCast 1026, 10:09]. Além disso, a missão Artemis II é uma continuação dos testes iniciados com a Artemis I, que foi uma missão não tripulada, e agora está levando seres humanos para além da Lua [Trecho 1, Episódio: NerdCast 1026, 30:26]. Essa combinação de alcançar novas distâncias e levar seres humanos para o espaço faz com que a missão seja considerada histórica.",
+      "reference_answer": "A Artemis II foi considerada histórica por levar seres humanos à maior distância da Terra já alcançada, repetindo o feito do programa Apollo décadas depois, com apenas cerca de 22 pessoas na história tendo vivenciado essa perspectiva.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 4,
+      "judge_reasoning": "The answer is faithful to the context, directly addresses the question, and mostly agrees with the reference answer, but lacks the specific detail about only 22 people having experienced this perspective."
+    },
+    {
+      "id": "CA02",
+      "type": "causal",
+      "query": "Por que é difícil voltar à Lua depois da Apollo?",
+      "answer": "A dificuldade em voltar à Lua após a missão Apollo é devido a vários fatores, incluindo a complexidade da órbita halo e a necessidade de manobrar a espaçonave em torno da Lua, que está em constante movimento de translação em torno da Terra [Trecho 1, Ep: NerdCast 1026, 67:40]. Além disso, a capacidade de manobra da espaçonave Orion é limitada, o que torna difícil realizar certos tipos de órbitas [Trecho 1, Ep: NerdCast 1026, 67:40]. Outro desafio é a necessidade de grande quantidade de combustível para escapar da gravidade da Terra e ir para a Lua, e posteriormente retornar [Trecho 2, Ep: NerdCast 1026, 68:53]. Esses fatores contribuem para a complexidade e o desafio de voltar à Lua após a missão Apollo.",
+      "reference_answer": "Voltar à Lua é difícil por causa do custo altíssimo de cada lançamento (na faixa de bilhões de dólares), da complexidade tecnológica exigida, e de cortes e instabilidade no orçamento da NASA ao longo de diferentes governos, o que atrasa repetidamente os cronogramas.",
+      "chunks_used": 5,
+      "faithfulness": 4,
+      "answer_relevancy": 4,
+      "answer_correctness": 2,
+      "judge_reasoning": "A resposta apresenta alguns pontos relevantes sobre a dificuldade de voltar à Lua, como a complexidade da órbita halo e a limitação da capacidade de manobra da espaçonave Orion, mas não aborda o principal desafio mencionado na resposta de referência, que é o custo altíssimo e a instabilidade orçamentária."
+    },
+    {
+      "id": "N01",
+      "type": "negativa",
+      "query": "O que o NerdCast falou sobre criptomoedas e blockchain?",
+      "answer": "O NerdCast mencionou as criptomoedas e o blockchain em alguns episódios. No episódio NerdCast 768, foi discutido o recorde de valor da Bitcoin e a compra de 1.5 bilhão de dólares em Bitcoins pela Tesla [Trecho 1, Ep: NerdCast 768, 05:11]. Já no episódio NerdCast 776, foi questionado se as tecnologias de blockchain vão encontrar uma forma de popularização [Trecho 2, Ep: NerdCast 776, 04:31]. Além disso, no episódio NerdCast Oferecido por Zapsign, foi mencionado o viés de confirmação em relação a ideias que envolvem blockchain [Trecho 4, Ep: NerdCast Oferecido por Zapsign, 52:08]. Essas são as menções específicas às criptomoedas e blockchain nos trechos fornecidos.",
+      "reference_answer": "Não há informação suficiente nos episódios indexados.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 5,
+      "judge_reasoning": "A resposta fornece informações específicas sobre as menções a criptomoedas e blockchain nos episódios do NerdCast, mantendo-se fiel ao contexto e relevante à pergunta, além de concordar com a resposta de referência ao admitir a limitação da informação disponível."
+    },
+    {
+      "id": "N02",
+      "type": "negativa",
+      "query": "Qual foi a opinião do NerdCast sobre o último jogo da Copa do Mundo?",
+      "answer": "Não encontrei essa informação nos episódios disponíveis.",
+      "reference_answer": "Não há informação suficiente nos episódios indexados.",
+      "chunks_used": 5,
+      "faithfulness": 5,
+      "answer_relevancy": 5,
+      "answer_correctness": 5,
+      "judge_reasoning": "A resposta está de acordo com o contexto, pois não há menção ao último jogo da Copa do Mundo nos episódios disponíveis."
+    }
+  ]
+}
