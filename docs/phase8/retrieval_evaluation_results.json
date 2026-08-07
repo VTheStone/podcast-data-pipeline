@@ -1,0 +1,148 @@
+{
+  "timestamp": "2026-08-05T20:34:56.254509",
+  "k": 10,
+  "avg_precision_at_k": 0.1,
+  "avg_recall_at_k": 0.4786,
+  "mrr": 0.54,
+  "avg_r_precision": 0.2786,
+  "per_query": [
+    {
+      "id": "F02",
+      "query": "Quais astronautas participaram da missão Artemis II?",
+      "k": 10,
+      "r": 7,
+      "precision_at_k": 0.1,
+      "recall_at_k": 0.1429,
+      "reciprocal_rank": 1.0,
+      "r_precision": 0.1429,
+      "retrieved_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_35",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_22",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_17",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_7",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_34",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_21",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_25",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_69",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_26",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_15"
+      ],
+      "expected_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_35",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_39",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_42",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_44",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_46",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_47",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_48"
+      ]
+    },
+    {
+      "id": "F03",
+      "query": "O que é o programa Artemis da NASA?",
+      "k": 10,
+      "r": 1,
+      "precision_at_k": 0.1,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 0.2,
+      "r_precision": 0.0,
+      "retrieved_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_22",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_67",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_21",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_80",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_33",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_15",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_51",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_69",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_50",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_7"
+      ],
+      "expected_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_33"
+      ]
+    },
+    {
+      "id": "C01",
+      "query": "Qual a diferença entre a Artemis I e a Artemis II?",
+      "k": 10,
+      "r": 2,
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank": 1.0,
+      "r_precision": 1.0,
+      "retrieved_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_22",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_33",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_69",
+        "https://jovemnerd.com.br/nerdcast/como-e-bom-o-sci-fi-do-seculo-xxi/_72",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_7",
+        "https://jovemnerd.com.br/nerdcast/house-of-the-dragon-conspiracoes-traicoes-e-pack-do-pezinho/_113",
+        "https://jovemnerd.com.br/nerdcast/rpg-ghanor-6-o-paladino-a-aureola-e-o-paraiso/_22",
+        "https://jovemnerd.com.br/nerdcast/world-of-warcraft-20-anos-de-jogatina/_18",
+        "https://jovemnerd.com.br/nerdcast/explorando-o-universo-de-halo/_38",
+        "https://jovemnerd.com.br/nerdcast/politica-internacional-2023/_55"
+      ],
+      "expected_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_22",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_33"
+      ]
+    },
+    {
+      "id": "CA01",
+      "query": "Por que a missão Artemis II foi considerada histórica?",
+      "k": 10,
+      "r": 4,
+      "precision_at_k": 0.1,
+      "recall_at_k": 0.25,
+      "reciprocal_rank": 0.5,
+      "r_precision": 0.25,
+      "retrieved_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_22",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_7",
+        "https://jovemnerd.com.br/nerdcast/egiptologia-tutancamon-napoleao-e-durepox-arqueologico/_36",
+        "https://jovemnerd.com.br/nerdcast/o-poder-de-roma/_76",
+        "0861c1e4-b106-11f0-a040-bf70bcec0847_61",
+        "https://jovemnerd.com.br/nerdcast/a-gloriosa-era-dos-gladiadores/_56",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_33",
+        "https://jovemnerd.com.br/nerdcast/egiptologia-tutancamon-napoleao-e-durepox-arqueologico/_49",
+        "https://jovemnerd.com.br/nerdcast/roma-barbara-e-decadente/_26",
+        "https://jovemnerd.com.br/nerdcast/egiptologia-tutancamon-napoleao-e-durepox-arqueologico/_13"
+      ],
+      "expected_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_7",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_11",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_19",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_27"
+      ]
+    },
+    {
+      "id": "CA02",
+      "query": "Por que é difícil voltar à Lua depois da Apollo?",
+      "k": 10,
+      "r": 4,
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "r_precision": 0.0,
+      "retrieved_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_52",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_53",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_61",
+        "https://jovemnerd.com.br/nerdcast/politica-internacional-2021/_56",
+        "https://jovemnerd.com.br/nerdcast/o-espaco-disputado/_77",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_34",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_51",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_17",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_12",
+        "https://jovemnerd.com.br/nerdcast/oppenheimer-e-o-poder-politico-do-atomo/_8"
+      ],
+      "expected_ids": [
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_8",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_54",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_63",
+        "0a7470a6-3a8d-11f1-9c02-e3c72f761653_65"
+      ]
+    }
+  ]
+}

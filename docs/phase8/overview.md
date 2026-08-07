@@ -75,8 +75,70 @@ Based on Phase 6 evaluation findings:
   differently (abstract → broader search, specific → tighter filter)
 - **Re-ranking**: implement cross-encoder re-ranking for top-20 chunks
   before selecting top-5 for the LLM
-- **RAGAS Evaluation**: automated faithfulness and relevance scoring
-  for regression testing
+- **RAGAS Evaluation**: deferred. Implemented as a custom LLM-as-judge
+  instead (`tests/generation_metrics.py`), using the Groq client already
+  in the project. RAGAS pulls ~30 packages centered on LangChain
+  (langchain-core, langgraph, langsmith) plus `datasets`/`pyarrow` — and
+  `pyarrow` already caused a `Windows fatal exception: access violation`
+  during test collection in this environment. The custom judge keeps the
+  same industry-standard metric vocabulary (faithfulness, answer
+  relevancy, answer correctness) without inheriting a framework this
+  project doesn't otherwise use. Revisit if the evaluation needs grow
+  beyond three metrics.
+
+### Evaluation Baseline (M3 + M4)
+
+First automated measurement over the 11-query golden dataset
+(`tests/rag_evaluation_queries.py`), establishing the baseline that
+future retrieval work is measured against.
+
+**Retrieval** (`tests/evaluate_retrieval.py`, 5 extractive queries, K=10):
+
+| Metric | Value |
+|---|---|
+| Avg Precision@10 | 0.100 |
+| Avg Recall@10 | 0.479 |
+| MRR | 0.540 |
+| Avg R-Precision | 0.279 |
+
+**Generation** (`tests/evaluate_generation.py`, 11 queries, LLM-as-judge):
+
+| Metric | Value |
+|---|---|
+| Faithfulness | 4.82 / 5 |
+| Answer Relevancy | 4.73 / 5 |
+| Answer Correctness | 3.45 / 5 |
+
+**Primary finding:** high faithfulness with low correctness, combined
+with 0.479 recall, localizes the bottleneck to **retrieval, not
+generation** — the model answers faithfully from what it receives, but
+retrieval doesn't surface enough relevant chunks. Prompt tuning will not
+move these numbers; the re-ranking, adaptive-K and NER items above will.
+CA02 is the clearest failure: 0.00 recall in M3 and correctness 2/5 in
+M4, confirmed independently by both measurements.
+
+### Known limitations of the current evaluation
+
+These affect how much weight the numbers above can carry:
+
+- **Self-evaluation bias**: the judge model is
+  `llama-3.3-70b-versatile` — the same model that generates the answers.
+  Models tend to favor their own output style, so faithfulness and
+  relevancy scores likely skew optimistic. Using a different model as
+  judge would harden this.
+- **Unreachable reference answers**: F01, R02 and C02 have gold answers
+  written from information that is not in the indexed corpus. F01 asks
+  who the host is, but M0 confirmed the corpus contains no biographical
+  segment about him (self-introductions are always the standard jingle);
+  R02 and C02 were written from *episode titles*, which are not indexed
+  in ChromaDB — only transcript text is. Their low correctness scores
+  measure the gap in the ground truth, not only a system failure.
+- **Sample size**: 11 queries total, 5 of them extractive. One outlier
+  moves any average substantially. This is a baseline, not a
+  statistically robust benchmark.
+- **Score variance**: LLM-as-judge is not fully deterministic even at
+  `temperature=0.0`. Treat these as monitored metrics with a regression
+  tolerance, never as binary pass/fail gates.
 
 ## Database Schema
 
