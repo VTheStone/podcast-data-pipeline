@@ -3,6 +3,7 @@
 > End-to-end RAG system over a podcast catalog — from RSS ingestion and
 > Whisper transcription to semantic search with LLM-powered citations.
 
+[![tests](https://github.com/VTheStone/podcast-data-pipeline/actions/workflows/tests.yml/badge.svg)](https://github.com/VTheStone/podcast-data-pipeline/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.10+cu128-orange)
 ![Whisper](https://img.shields.io/badge/ASR-Whisper_large--v3-green)
