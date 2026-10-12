@@ -1,0 +1,27 @@
+# Ingestion
+feedparser==6.0.12
+requests==2.33.1
+tqdm==4.66.2
+
+# Database
+sqlalchemy==2.0.40
+alembic==1.15.2
+
+# Utilities
+python-dotenv==1.2.2
+loguru==0.7.3
+
+# Chunking / tokenization (phase 4)
+llama-index-core==0.14.21
+llama-index-embeddings-huggingface==0.7.0
+tiktoken==0.12.0
+
+# Vector DB (phase 5)
+chromadb==1.5.8
+sentence-transformers==4.1.0
+
+# LLM client (phase 6, needed by generation_metrics)
+groq==1.2.0
+
+# Testing
+pytest==8.3.4
